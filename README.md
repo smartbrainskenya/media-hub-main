@@ -1,36 +1,84 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Smart Brains Media Hub
 
-## Getting Started
+Smart Brains Media Hub is a custom-built media library platform for **Smart Brains Kenya**. It provides a stable, branded environment for students to access images and videos for their coding coursework while offering admin staff a streamlined interface for asset management.
 
-First, run the development server:
+## 🚀 Key Features
+
+- **Public Gallery:** Clean, responsive browsing of images and videos.
+- **Direct Branded URLs:** Copy stable URLs for use in HTML `<img src>` and `<video src>` tags.
+- **Admin Dashboard:** Overview of media assets with usage statistics.
+- **Signed Uploads:** Efficient direct-to-cloud uploading for large media files (up to 500MB).
+- **Import by URL:** Quick asset ingestion from external web addresses.
+- **Management Tools:** Rename assets, replace files, and secure deletion with confirmation.
+- **Security:** Protected admin routes, hashed passwords, and strict server-side environment variable handling.
+
+## 🛠 Tech Stack
+
+- **Framework:** Next.js 14+ (App Router)
+- **Language:** TypeScript 5+
+- **Styling:** Tailwind CSS v4
+- **Database:** Supabase (PostgreSQL)
+- **Media Storage/CDN:** Publitio
+- **Authentication:** NextAuth.js v5 (Auth.js)
+- **Validation:** Zod
+- **API Client:** Axios
+
+## 📋 Prerequisites
+
+- **Node.js:** 20+
+- **Database:** Supabase Account
+- **Media:** Publitio Account
+- **Hosting:** Vercel (Recommended)
+
+## ⚙️ Environment Setup
+
+Create a `.env.local` file in the root directory:
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+# Supabase
+SUPABASE_URL=your_supabase_url
+SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+
+# Publitio
+PUBLITIO_API_KEY=your_api_key
+PUBLITIO_API_SECRET=your_api_secret
+PUBLITIO_BRANDED_DOMAIN=https://your-media-domain.com
+
+# NextAuth
+NEXTAUTH_SECRET=your_random_secret
+NEXTAUTH_URL=http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## 🏗 Database Migration
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+Run the provided SQL script in your Supabase SQL Editor:
+`scripts/migrations/001_initial_schema.sql`
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## 👤 Creating the First Admin
 
-## Learn More
+Run the following command to seed your first administrative user:
+```bash
+npx tsx scripts/seed-admin.ts <email> <password> <displayName>
+```
 
-To learn more about Next.js, take a look at the following resources:
+## 💻 Local Development
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. Install dependencies: `npm install`
+2. Start the dev server: `npm run dev`
+3. Open [http://localhost:3000](http://localhost:3000)
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🚢 Deployment
 
-## Deploy on Vercel
+1. Push code to a GitHub repository.
+2. Connect the repository to Vercel.
+3. Configure all environment variables in the Vercel Dashboard.
+4. Run the database migration in Supabase.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 🔒 Security & Architecture
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- **Server-Only Enforcement:** Sensitive logic is restricted to server environments via `import 'server-only'`.
+- **Signed Uploads:** Large files are streamed directly from the browser to Publitio, bypassing serverless function timeouts and memory limits.
+- **Zero Raw IDs:** Publitio internal IDs and raw URLs are never exposed to public users.
+
+---
+Built with ❤️ for **Smart Brains Kenya**
