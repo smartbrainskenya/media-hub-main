@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { publitio } from '@/lib/publitio';
+import CryptoJS from 'crypto-js';
 
 /**
  * POST /api/upload/sign
@@ -25,30 +26,27 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ data: null, error: 'File size exceeds 500MB limit' }, { status: 400 });
     }
 
-    if (!content_type.startsWith('image/') && !content_type.startsWith('video/')) {
-      return NextResponse.json({ data: null, error: 'Invalid file type. Only images and videos are allowed.' }, { status: 400 });
-    }
+    const api_key = process.env.PUBLITIO_API_KEY!;
+    const api_secret = process.env.PUBLITIO_API_SECRET!;
+    const timestamp = Math.floor(Date.now() / 1000);
+    const nonce = Math.floor(Math.random() * 100000000);
+    const action = '/files/create';
 
-    // @ts-ignore
-    const signature = await publitio.getSignature({
-      action: '/files/create',
-      method: 'POST',
-      filename,
-      content_type,
-    });
+    // Signature formula: sha1(timestamp + nonce + api_secret + action)
+    const signature = CryptoJS.SHA1(timestamp + '' + nonce + api_secret + action).toString();
 
     return NextResponse.json({ 
       data: {
-        signature: signature.signature,
-        timestamp: signature.timestamp,
-        nonce: signature.nonce,
-        api_key: process.env.PUBLITIO_API_KEY,
+        signature,
+        timestamp,
+        nonce,
+        api_key,
         upload_url: 'https://api.publit.io/v1/files/create'
       }, 
       error: null 
     });
   } catch (error: any) {
-    console.error('[API_UPLOAD_SIGN_POST]', error);
+    console.error('[API_UPLOAD_SIGN_POST] Error:', error);
     return NextResponse.json({ data: null, error: 'Failed to generate upload signature' }, { status: 500 });
   }
 }
