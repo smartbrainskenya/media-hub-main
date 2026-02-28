@@ -14,21 +14,30 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       async authorize(credentials) {
         if (!credentials?.email || !credentials?.password) return null;
 
+        console.log('[AUTH] Attempting login for:', credentials.email);
+
         const { data: user, error } = await db
           .from('admin_users')
           .select('*')
           .eq('email', credentials.email)
           .single();
 
-        if (error || !user) return null;
+        if (error || !user) {
+          console.error('[AUTH] User not found or DB error:', error?.message);
+          return null;
+        }
 
         const isPasswordValid = await bcrypt.compare(
           credentials.password as string,
           user.password_hash
         );
 
-        if (!isPasswordValid) return null;
+        if (!isPasswordValid) {
+          console.error('[AUTH] Invalid password for:', credentials.email);
+          return null;
+        }
 
+        console.log('[AUTH] Successful login for:', credentials.email);
         return {
           id: user.id,
           email: user.email,

@@ -21,6 +21,15 @@ if (!publitio && process.env.NODE_ENV !== 'production') {
  * Constructs full URL from PUBLITIO_BRANDED_DOMAIN + path
  */
 export function buildBrandedUrl(publitioPath: string): string {
+  if (!publitioPath) return '';
+  
+  // If it's already a full URL pointing to our branded domain or any http(s), return it
+  if (publitioPath.startsWith('http')) {
+    // If it contains the raw publitio domain, we might want to replace it, 
+    // but usually url_preview already uses the branded domain if configured in Publitio.
+    return publitioPath;
+  }
+
   const domain = brandedDomain || 'https://media.smartbrainskenya.com';
   // Ensure the path doesn't start with a slash if the domain ends with one, or vice-versa
   const cleanDomain = domain.endsWith('/') ? domain.slice(0, -1) : domain;
