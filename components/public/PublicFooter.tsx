@@ -12,7 +12,7 @@ export default function PublicFooter() {
           className="text-[10px] text-brand-bg hover:text-brand-muted transition-colors select-none"
           aria-label="Admin Access"
         >
-          .
+          Admin Access
         </Link>
       </div>
     </footer>
