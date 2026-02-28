@@ -22,8 +22,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ data: null, error: 'Missing required data' }, { status: 400 });
     }
 
-    const type: MediaType = publitio_response.type === 'video' ? 'video' : 'image';
-    const branded_url = buildBrandedUrl(publitio_response.url_preview || publitio_response.url_short);
+    const type: MediaType = (publitio_response.type === 'video' || publitio_response.extension === 'mp4') ? 'video' : 'image';
+    const publitioPath = publitio_response.url_preview || publitio_response.url_short || publitio_response.path || '';
+    
+    if (!publitioPath) {
+      console.error('[API_UPLOAD_CONFIRM] No URL or path in Publitio response:', publitio_response);
+      return NextResponse.json({ data: null, error: 'Incomplete response from media server' }, { status: 400 });
+    }
+
+    const branded_url = buildBrandedUrl(publitioPath);
 
     const { data: asset, error } = await db
       .from('media_assets')
@@ -43,7 +50,10 @@ export async function POST(req: NextRequest) {
       .select()
       .single();
 
-    if (error) throw error;
+    if (error || !asset) {
+      console.error('[API_UPLOAD_CONFIRM] Supabase insert failed:', error);
+      return NextResponse.json({ data: null, error: 'Failed to record asset in database' }, { status: 500 });
+    }
 
     // Log action
     await db.from('audit_log').insert([
@@ -55,10 +65,10 @@ export async function POST(req: NextRequest) {
       },
     ]);
 
-    const { publitio_id, ...sanitizedAsset } = asset;
+    const { publitio_id: _, ...sanitizedAsset } = asset as any;
     return NextResponse.json({ data: sanitizedAsset, error: null });
   } catch (error: any) {
-    console.error('[API_UPLOAD_CONFIRM_POST]', error);
-    return NextResponse.json({ data: null, error: 'Failed to confirm upload' }, { status: 500 });
+    console.error('[API_UPLOAD_CONFIRM_POST] Error:', error);
+    return NextResponse.json({ data: null, error: error.message || 'Failed to confirm upload' }, { status: 500 });
   }
 }

@@ -2,12 +2,15 @@ import 'server-only';
 // @ts-ignore
 import PublitioAPI from 'publitio_js_sdk';
 
+// Handle commonjs export structure of publitio_js_sdk
+const PublitioClient = (PublitioAPI as any).publitioApi || (PublitioAPI as any).default || PublitioAPI;
+
 const apiKey = process.env.PUBLITIO_API_KEY;
 const apiSecret = process.env.PUBLITIO_API_SECRET;
 const brandedDomain = process.env.PUBLITIO_BRANDED_DOMAIN;
 
-export const publitio = (apiKey && apiSecret)
-  ? new PublitioAPI(apiKey, apiSecret)
+export const publitio = (apiKey && apiSecret && typeof PublitioClient === 'function')
+  ? new PublitioClient(apiKey, apiSecret)
   : null as any;
 
 if (!publitio && process.env.NODE_ENV !== 'production') {
