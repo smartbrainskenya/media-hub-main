@@ -30,7 +30,10 @@ export async function GET(req: NextRequest) {
     if (error) throw error;
 
     // Sanitize response: remove publitio_id
-    const sanitizedData = (data || []).map(({ publitio_id, ...rest }) => rest) as MediaAsset[];
+    const sanitizedData = (data || []).map((item: any) => {
+      const { publitio_id, ...rest } = item;
+      return rest;
+    }) as MediaAsset[];
 
     const response: PaginatedResponse<MediaAsset> = {
       data: sanitizedData,

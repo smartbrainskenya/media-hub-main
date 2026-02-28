@@ -63,7 +63,12 @@ self.__SERVER_FILES_MANIFEST={
           "search": ""
         }
       ],
-      "remotePatterns": [],
+      "remotePatterns": [
+        {
+          "protocol": "https",
+          "hostname": "media.media.smartbrainskenya.com"
+        }
+      ],
       "qualities": [
         75
       ],

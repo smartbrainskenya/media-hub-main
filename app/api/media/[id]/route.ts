@@ -28,7 +28,7 @@ export async function GET(req: NextRequest, { params }: Params) {
       return NextResponse.json({ data: null, error: 'Media not found' }, { status: 404 });
     }
 
-    const { publitio_id, ...sanitizedAsset } = asset;
+    const { publitio_id: _, ...sanitizedAsset } = asset as any;
     return NextResponse.json({ data: sanitizedAsset, error: null });
   } catch (error: any) {
     console.error('[API_MEDIA_ID_GET]', error);
@@ -74,7 +74,7 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       },
     ]);
 
-    const { publitio_id, ...sanitizedAsset } = asset;
+    const { publitio_id: _, ...sanitizedAsset } = asset as any;
     return NextResponse.json({ data: sanitizedAsset, error: null });
   } catch (error: any) {
     console.error('[API_MEDIA_ID_PATCH]', error);

@@ -47,6 +47,42 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
 }
 
 
+// Validate ../../app/(admin)/admin/import/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/admin/import">> = Specific
+  const handler = {} as typeof import("../../app/(admin)/admin/import/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/(admin)/admin/media/[id]/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/admin/media/[id]">> = Specific
+  const handler = {} as typeof import("../../app/(admin)/admin/media/[id]/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/(admin)/admin/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/admin">> = Specific
+  const handler = {} as typeof import("../../app/(admin)/admin/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/(admin)/admin/upload/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/admin/upload">> = Specific
+  const handler = {} as typeof import("../../app/(admin)/admin/upload/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
 // Validate ../../app/(admin)/login/page.tsx
 {
   type __IsExpected<Specific extends AppPageConfig<"/login">> = Specific
@@ -56,10 +92,37 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
-// Validate ../../app/page.tsx
+// Validate ../../app/(public)/images/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/images">> = Specific
+  const handler = {} as typeof import("../../app/(public)/images/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/(public)/media/[id]/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/media/[id]">> = Specific
+  const handler = {} as typeof import("../../app/(public)/media/[id]/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/(public)/page.tsx
 {
   type __IsExpected<Specific extends AppPageConfig<"/">> = Specific
-  const handler = {} as typeof import("../../app/page.js")
+  const handler = {} as typeof import("../../app/(public)/page.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/(public)/videos/page.tsx
+{
+  type __IsExpected<Specific extends AppPageConfig<"/videos">> = Specific
+  const handler = {} as typeof import("../../app/(public)/videos/page.js")
   type __Check = __IsExpected<typeof handler>
   // @ts-ignore
   type __Unused = __Check
@@ -74,9 +137,72 @@ type RouteHandlerConfig<Route extends AppRouteHandlerRoutes = AppRouteHandlerRou
   type __Unused = __Check
 }
 
+// Validate ../../app/api/import/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/import">> = Specific
+  const handler = {} as typeof import("../../app/api/import/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/api/media/[id]/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/media/[id]">> = Specific
+  const handler = {} as typeof import("../../app/api/media/[id]/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/api/media/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/media">> = Specific
+  const handler = {} as typeof import("../../app/api/media/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/api/upload/confirm/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/upload/confirm">> = Specific
+  const handler = {} as typeof import("../../app/api/upload/confirm/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/api/upload/sign/route.ts
+{
+  type __IsExpected<Specific extends RouteHandlerConfig<"/api/upload/sign">> = Specific
+  const handler = {} as typeof import("../../app/api/upload/sign/route.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
 
 
 
+
+
+// Validate ../../app/(admin)/layout.tsx
+{
+  type __IsExpected<Specific extends LayoutConfig<"/">> = Specific
+  const handler = {} as typeof import("../../app/(admin)/layout.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
+
+// Validate ../../app/(public)/layout.tsx
+{
+  type __IsExpected<Specific extends LayoutConfig<"/">> = Specific
+  const handler = {} as typeof import("../../app/(public)/layout.js")
+  type __Check = __IsExpected<typeof handler>
+  // @ts-ignore
+  type __Unused = __Check
+}
 
 // Validate ../../app/layout.tsx
 {
