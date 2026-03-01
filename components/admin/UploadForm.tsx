@@ -57,15 +57,11 @@ export default function UploadForm() {
         file_size: file.size,
       });
 
-      const { upload_url, signature, timestamp, nonce, api_key } = signRes.data.data;
+      const { upload_url } = signRes.data.data;
 
       // 2. Upload directly to Publitio
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('api_key', api_key);
-      formData.append('timestamp', timestamp);
-      formData.append('nonce', nonce);
-      formData.append('signature', signature);
 
       const publitioRes = await axios.post(upload_url, formData, {
         onUploadProgress: (progressEvent) => {

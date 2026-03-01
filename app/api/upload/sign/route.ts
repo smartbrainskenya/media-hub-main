@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
 import { publitio } from '@/lib/publitio';
-import CryptoJS from 'crypto-js';
 
 /**
  * POST /api/upload/sign
@@ -26,30 +25,16 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ data: null, error: 'File size exceeds 500MB limit' }, { status: 400 });
     }
 
-    const api_key = process.env.PUBLITIO_API_KEY!;
-    const api_secret = process.env.PUBLITIO_API_SECRET!;
-    const timestamp = Math.floor(Date.now() / 1000);
-    // SDK uses 8 digit random number padded with 0
-    const nonce = Math.floor(Math.random() * 90000000) + 10000000; 
+    // publitio.uploadUrlSigned() automatically handles timestamp, secure nonce, signature, and kit
+    const upload_url = publitio.uploadUrlSigned();
 
-    // SDK Signature formula: sha1(timestamp + nonce + api_secret)
-    const signature = CryptoJS.SHA1(timestamp + '' + nonce + api_secret).toString();
-
-    console.log('[API_UPLOAD_SIGN] Generated signature:', {
-      timestamp,
-      nonce,
-      has_key: !!api_key,
-      has_secret: !!api_secret,
-      signature_prefix: signature.substring(0, 5)
+    console.log('[API_UPLOAD_SIGN] Generated signed url:', {
+      url_prefix: upload_url.split('?')[0]
     });
 
     return NextResponse.json({ 
       data: {
-        signature,
-        timestamp,
-        nonce,
-        api_key,
-        upload_url: 'https://api.publit.io/v1/files/create'
+        upload_url
       }, 
       error: null 
     });
