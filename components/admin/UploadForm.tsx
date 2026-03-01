@@ -85,7 +85,8 @@ export default function UploadForm() {
       router.refresh();
     } catch (error: any) {
       console.error('Upload error:', error);
-      toast.error(error.response?.data?.error || 'Failed to upload media');
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to upload media';
+      toast.error(typeof errorMessage === 'string' ? errorMessage : 'An unexpected error occurred');
       setIsUploading(false);
     }
   };

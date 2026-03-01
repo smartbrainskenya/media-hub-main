@@ -29,11 +29,19 @@ export async function POST(req: NextRequest) {
     const api_key = process.env.PUBLITIO_API_KEY!;
     const api_secret = process.env.PUBLITIO_API_SECRET!;
     const timestamp = Math.floor(Date.now() / 1000);
-    const nonce = Math.floor(Math.random() * 100000000);
-    const action = '/files/create';
+    // SDK uses 8 digit random number padded with 0
+    const nonce = Math.floor(Math.random() * 90000000) + 10000000; 
 
-    // Signature formula: sha1(timestamp + nonce + api_secret + action)
-    const signature = CryptoJS.SHA1(timestamp + '' + nonce + api_secret + action).toString();
+    // SDK Signature formula: sha1(timestamp + nonce + api_secret)
+    const signature = CryptoJS.SHA1(timestamp + '' + nonce + api_secret).toString();
+
+    console.log('[API_UPLOAD_SIGN] Generated signature:', {
+      timestamp,
+      nonce,
+      has_key: !!api_key,
+      has_secret: !!api_secret,
+      signature_prefix: signature.substring(0, 5)
+    });
 
     return NextResponse.json({ 
       data: {
