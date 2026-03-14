@@ -76,3 +76,4 @@ dist-ssr
 
 # AI Specs
 ai-spec/
+.env
