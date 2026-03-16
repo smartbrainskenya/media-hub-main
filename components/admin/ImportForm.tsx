@@ -23,13 +23,31 @@ export default function ImportForm() {
   const onSubmit = async (data: ImportValues) => {
     setIsImporting(true);
     try {
-      await axios.post('/api/import', data);
+      console.log('[IMPORT_FORM] Starting import from URL:', data.url);
+      
+      const res = await axios.post('/api/import', data);
+      
+      if (!res.data?.data) {
+        throw new Error(res.data?.error || 'No response data from server');
+      }
+
+      console.log('[IMPORT_FORM] Import successful:', {
+        assetId: res.data.data.id,
+        title: res.data.data.title,
+      });
+
       toast.success('Media imported successfully!');
       router.push('/admin');
       router.refresh();
     } catch (error: any) {
-      console.error('Import error:', error);
-      toast.error(error.response?.data?.error || 'Failed to import media');
+      console.error('[IMPORT_FORM] Error:', {
+        message: error.message,
+        status: error.response?.status,
+        errorData: error.response?.data,
+      });
+
+      const errorMessage = error.response?.data?.error || error.message || 'Failed to import media';
+      toast.error(typeof errorMessage === 'string' ? errorMessage : 'An unexpected error occurred');
       setIsImporting(false);
     }
   };
