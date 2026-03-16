@@ -178,45 +178,126 @@ export async function POST(req: NextRequest) {
 
     const branded_url = buildBrandedUrl(publitioPath);
 
-    // Insert into database
-    console.log('[API_UPLOAD] Inserting into database:', {
+    // Insert or update in database (upsert on publitio_id)
+    console.log('[API_UPLOAD] Inserting or updating database record:', {
       publitio_id: publitio_response.id,
       title,
       type,
       uploaded_by: session.user.id,
     });
 
-    const { data: asset, error: dbError } = await db
+    // Use raw SQL for upsert (INSERT ... ON CONFLICT)
+    const upsertQuery = `
+      INSERT INTO media_assets (publitio_id, title, type, branded_url, file_size_bytes, width_px, height_px, duration_secs, uploaded_by)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+      ON CONFLICT (publitio_id) DO UPDATE SET
+        title = EXCLUDED.title,
+        branded_url = EXCLUDED.branded_url,
+        file_size_bytes = EXCLUDED.file_size_bytes,
+        width_px = EXCLUDED.width_px,
+        height_px = EXCLUDED.height_px,
+        duration_secs = EXCLUDED.duration_secs,
+        updated_at = NOW()
+      RETURNING *;
+    `;
+
+    const { data: assetArray, error: dbError } = await db.rpc('execute_upsert', {
+      query: upsertQuery,
+      values: [
+        publitio_response.id,
+        title.trim(),
+        type,
+        branded_url,
+        publitio_response.size || file.size,
+        publitio_response.width,
+        publitio_response.height,
+        publitio_response.duration ? Math.round(publitio_response.duration) : null,
+        session.user.id,
+      ],
+    });
+
+    // Check if we can use direct upsert via SDK (Supabase v2 does NOT support ON CONFLICT in the JS SDK)
+    // So we'll use raw SQL execution. If that's not available, fall back to check-then-insert pattern:
+    
+    let asset: any;
+    let wasReplaced = false;
+
+    // Try to find existing asset by publitio_id
+    const { data: existingAssets, error: checkError } = await db
       .from('media_assets')
-      .insert([
-        {
-          publitio_id: publitio_response.id,
+      .select('id')
+      .eq('publitio_id', publitio_response.id)
+      .limit(1);
+
+    if (checkError) {
+      console.error('[API_UPLOAD] Error checking for existing asset:', checkError);
+    }
+
+    if (existingAssets && existingAssets.length > 0) {
+      // Asset exists, update it
+      wasReplaced = true;
+      console.log('[API_UPLOAD] Found existing asset with publitio_id', publitio_response.id, 'updating...');
+      
+      const { data: updatedAsset, error: updateError } = await db
+        .from('media_assets')
+        .update({
           title: title.trim(),
-          type,
           branded_url,
           file_size_bytes: publitio_response.size || file.size,
           width_px: publitio_response.width,
           height_px: publitio_response.height,
           duration_secs: publitio_response.duration ? Math.round(publitio_response.duration) : null,
-          uploaded_by: session.user.id,
-        },
-      ])
-      .select()
-      .single();
+          updated_at: new Date().toISOString(),
+        })
+        .eq('publitio_id', publitio_response.id)
+        .select()
+        .single();
 
-    if (dbError || !asset) {
-      console.error('[API_UPLOAD] Database insert failed:', dbError);
-      return NextResponse.json(
-        { data: null, error: 'Failed to record asset in database' },
-        { status: 500 }
-      );
+      if (updateError || !updatedAsset) {
+        console.error('[API_UPLOAD] Database update failed:', updateError);
+        return NextResponse.json(
+          { data: null, error: 'Failed to update asset in database' },
+          { status: 500 }
+        );
+      }
+
+      asset = updatedAsset;
+    } else {
+      // Asset is new, insert it
+      const { data: newAsset, error: insertError } = await db
+        .from('media_assets')
+        .insert([
+          {
+            publitio_id: publitio_response.id,
+            title: title.trim(),
+            type,
+            branded_url,
+            file_size_bytes: publitio_response.size || file.size,
+            width_px: publitio_response.width,
+            height_px: publitio_response.height,
+            duration_secs: publitio_response.duration ? Math.round(publitio_response.duration) : null,
+            uploaded_by: session.user.id,
+          },
+        ])
+        .select()
+        .single();
+
+      if (insertError || !newAsset) {
+        console.error('[API_UPLOAD] Database insert failed:', insertError);
+        return NextResponse.json(
+          { data: null, error: 'Failed to record asset in database' },
+          { status: 500 }
+        );
+      }
+
+      asset = newAsset;
     }
 
-    // Log audit trail
+    // Log audit trail (record either upload or replace action)
     await db.from('audit_log').insert([
       {
         admin_id: session.user.id,
-        action: 'upload',
+        action: wasReplaced ? 'replace' : 'upload',
         media_id: asset.id,
         metadata: { title: asset.title, filename: file.name },
       },

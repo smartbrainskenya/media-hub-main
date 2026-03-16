@@ -42,3 +42,23 @@ export interface PaginatedResponse<T> {
   page: number;
   per_page: number;
 }
+
+/**
+ * Bulk upload types
+ */
+export interface BulkUploadFile {
+  file: File;
+  title: string;
+  status: 'pending' | 'uploading' | 'done' | 'error';
+  error?: string;
+}
+
+export interface FailedUpload {
+  filename: string;
+  error: string;
+}
+
+export interface UploadResult {
+  successCount: number;
+  failedUploads: FailedUpload[];
+}
