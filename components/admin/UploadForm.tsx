@@ -47,47 +47,61 @@ export default function UploadForm() {
     }
 
     setIsUploading(true);
-    setUploadProgress(0);
+    setUploadProgress(25);
 
     try {
-      // 1. Get signed upload URL
-      const signRes = await axios.post('/api/upload/sign', {
-        filename: file.name,
-        content_type: file.type,
-        file_size: file.size,
-      });
-
-      const { upload_url, signature, timestamp, nonce, api_key } = signRes.data.data;
-
-      // 2. Upload directly to Publitio
+      // Create FormData with file + title
       const formData = new FormData();
       formData.append('file', file);
-      formData.append('api_key', api_key);
-      formData.append('timestamp', timestamp);
-      formData.append('nonce', nonce);
-      formData.append('signature', signature);
+      formData.append('title', data.title);
 
-      const publitioRes = await axios.post(upload_url, formData, {
-        onUploadProgress: (progressEvent) => {
-          const percentCompleted = Math.round((progressEvent.loaded * 100) / (progressEvent.total || file.size));
-          setUploadProgress(percentCompleted);
-        },
+      console.log('[UPLOAD_FORM] Starting upload:', {
+        filename: file.name,
+        fileSize: (file.size / (1024 * 1024)).toFixed(2) + ' MB',
+        title: data.title,
       });
 
-      // 3. Confirm with our backend
-      await axios.post('/api/upload/confirm', {
-        publitio_response: publitioRes.data,
-        title: data.title,
+      setUploadProgress(50);
+
+      // Upload via unified SDK endpoint using Fetch API
+      // Note: Don't manually set Content-Type; browser handles it with boundary
+      const fetchRes = await fetch('/api/upload', {
+        method: 'POST',
+        body: formData,
+        // Let browser automatically set Content-Type: multipart/form-data with boundary
+      });
+
+      if (!fetchRes.ok) {
+        const errorData = await fetchRes.json().catch(() => ({}));
+        const errorMsg = errorData.error || `HTTP ${fetchRes.status}`;
+        throw new Error(errorMsg);
+      }
+
+      const json = await fetchRes.json();
+
+      if (!json?.data) {
+        throw new Error(json?.error || 'No response data from server');
+      }
+
+      setUploadProgress(100);
+      console.log('[UPLOAD_FORM] Upload successful:', {
+        assetId: json.data.id,
+        title: json.data.title,
       });
 
       toast.success('Media uploaded successfully!');
       router.push('/admin');
       router.refresh();
     } catch (error: any) {
-      console.error('Upload error:', error);
-      const errorMessage = error.response?.data?.error || error.message || 'Failed to upload media';
+      console.error('[UPLOAD_FORM] Error:', {
+        message: error.message,
+        stack: error.stack,
+      });
+
+      const errorMessage = error.message || 'Failed to upload media';
       toast.error(typeof errorMessage === 'string' ? errorMessage : 'An unexpected error occurred');
       setIsUploading(false);
+      setUploadProgress(0);
     }
   };
 
