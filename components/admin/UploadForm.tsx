@@ -214,7 +214,7 @@ export default function UploadForm() {
     setIsCancelled(true);
     abortControllerRef.current?.abort();
     setIsUploading(false);
-    toast.info('Upload cancelled');
+  toast('Upload cancelled', { icon: '🚫' });
   };
 
   // Retry failed files only
