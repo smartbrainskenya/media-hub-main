@@ -1,84 +1,116 @@
 # Smart Brains Media Hub
 
-Smart Brains Media Hub is a custom-built media library platform for **Smart Brains Kenya**. It provides a stable, branded environment for students to access images and videos for their coding coursework while offering admin staff a streamlined interface for asset management.
+An internal media library platform for **Smart Brains Kenya**, providing students with a curated, branded, and stable source of images and videos for their coding projects.
 
-## 🚀 Key Features
+## 🚀 Project Overview
 
-- **Public Gallery:** Clean, responsive browsing of images and videos.
-- **Direct Branded URLs:** Copy stable URLs for use in HTML `<img src>` and `<video src>` tags.
-- **Admin Dashboard:** Overview of media assets with usage statistics.
-- **Signed Uploads:** Efficient direct-to-cloud uploading for large media files (up to 500MB).
-- **Import by URL:** Quick asset ingestion from external web addresses.
-- **Management Tools:** Rename assets, replace files, and secure deletion with confirmation.
-- **Security:** Protected admin routes, hashed passwords, and strict server-side environment variable handling.
+The Smart Brains Media Hub allows admin staff to manage a library of media assets (images and videos) while providing students with a public gallery to browse and copy branded direct URLs for use in their projects.
 
 ## 🛠 Tech Stack
 
-- **Framework:** Next.js 14+ (App Router)
-- **Language:** TypeScript 5+
-- **Styling:** Tailwind CSS v4
-- **Database:** Supabase (PostgreSQL)
-- **Media Storage/CDN:** Publitio
-- **Authentication:** NextAuth.js v5 (Auth.js)
-- **Validation:** Zod
-- **API Client:** Axios
+| Component | Technology |
+|-----------|------------|
+| **Framework** | Next.js 14+ (App Router) |
+| **Language** | TypeScript 5+ (Strict Mode) |
+| **Styling** | Tailwind CSS v4 |
+| **Database** | Supabase (PostgreSQL) |
+| **Media/CDN** | Publitio (Server-side SDK) |
+| **Auth** | NextAuth v5 (Auth.js) |
+| **Rate Limiting** | Upstash (Redis) |
+| **Deployment** | Vercel |
 
 ## 📋 Prerequisites
 
-- **Node.js:** 20+
-- **Database:** Supabase Account
-- **Media:** Publitio Account
-- **Hosting:** Vercel (Recommended)
+- Node.js 20+
+- npm (Node Package Manager)
+- [Supabase](https://supabase.com) account
+- [Publitio](https://publit.io) account
+- [Upstash](https://upstash.com) account
+- [Vercel](https://vercel.com) account (optional, for deployment)
 
 ## ⚙️ Environment Setup
 
-Create a `.env.local` file in the root directory:
+Create a `.env.local` file in the root directory and add the following variables:
 
 ```bash
 # Supabase
-SUPABASE_URL=your_supabase_url
-SUPABASE_SERVICE_ROLE_KEY=your_service_role_key
+SUPABASE_URL=your_supabase_project_url
+SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
 
 # Publitio
-PUBLITIO_API_KEY=your_api_key
-PUBLITIO_API_SECRET=your_api_secret
-PUBLITIO_BRANDED_DOMAIN=https://your-media-domain.com
+PUBLITIO_API_KEY=your_publitio_api_key
+PUBLITIO_API_SECRET=your_publitio_api_secret
+PUBLITIO_BRANDED_DOMAIN=https://media.yoursite.com # Branded CNAME in Publitio
 
 # NextAuth
-NEXTAUTH_SECRET=your_random_secret
+NEXTAUTH_SECRET=your_random_secret # Generate with: openssl rand -base64 32
 NEXTAUTH_URL=http://localhost:3000
+
+# Rate Limiting (Upstash)
+UPSTASH_REDIS_REST_URL=your_upstash_redis_rest_url
+UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_rest_token
 ```
 
-## 🏗 Database Migration
+## 🗄️ Database Setup
 
-Run the provided SQL script in your Supabase SQL Editor:
-`scripts/migrations/001_initial_schema.sql`
+1. Log in to your Supabase project.
+2. Go to the **SQL Editor**.
+3. Run `scripts/migrations/001_initial_schema.sql`.
+4. Run `scripts/migrations/002_add_category_to_media_assets.sql`.
+5. Confirm `media_assets`, `admin_users`, and `audit_log` are created and `media_assets.category_slug` exists.
 
-## 👤 Creating the First Admin
+## 👤 Creating the First Admin User
 
-Run the following command to seed your first administrative user:
-```bash
-npx tsx scripts/seed-admin.ts <email> <password> <displayName>
-```
+To create an admin user for the first time, use the provided seed script:
+
+1. Ensure `.env.local` is set up.
+2. Run the seed command:
+   ```bash
+   npx tsx scripts/seed-admin.ts
+   ```
+3. Follow the prompts or use the results to log in at `/login`.
 
 ## 💻 Local Development
 
-1. Install dependencies: `npm install`
-2. Start the dev server: `npm run dev`
-3. Open [http://localhost:3000](http://localhost:3000)
+```bash
+# Install dependencies
+npm install
+
+# Start development server
+npm run dev
+```
+
+The application will be available at [http://localhost:3000](http://localhost:3000).
 
 ## 🚢 Deployment
 
-1. Push code to a GitHub repository.
-2. Connect the repository to Vercel.
-3. Configure all environment variables in the Vercel Dashboard.
-4. Run the database migration in Supabase.
+### Vercel Deployment
 
-## 🔒 Security & Architecture
+1. Push your code to a GitHub repository.
+2. Import the project in Vercel.
+3. Add all environment variables from `.env.local` to the Vercel project settings.
+4. Deploy.
 
-- **Server-Only Enforcement:** Sensitive logic is restricted to server environments via `import 'server-only'`.
-- **Signed Uploads:** Large files are streamed directly from the browser to Publitio, bypassing serverless function timeouts and memory limits.
-- **Zero Raw IDs:** Publitio internal IDs and raw URLs are never exposed to public users.
+*Note: Ensure the Publitio branded domain is correctly configured with your DNS provider.*
 
----
-Built with ❤️ for **Smart Brains Kenya**
+## 🛠️ Admin Guide
+
+Admin users can access the dashboard at `/admin`.
+
+- **Upload Media:** Use the "Upload" button to upload images or videos. Files are uploaded directly to Publitio using signed URLs.
+- **Import from URL:** Use the "Import" tab to provide a direct URL to an external file. The server will fetch and stream it to Publitio.
+- **Rename:** Edit asset titles directly in the gallery view.
+- **Replace:** Update existing assets with new files while keeping the same ID and URL.
+- **Delete:** Remove assets from both the library and Publitio.
+
+## 🏗️ Architecture Notes
+
+- **Signed Upload Pattern:** To avoid serverless execution limits, large files are uploaded directly from the browser to Publitio using temporary signed parameters generated by our API.
+- **Publitio over Vercel Blob:** Chosen for its superior built-in media processing (transcoding, resizing) and dedicated global CDN.
+- **Branded URLs:** All client-facing URLs use our own domain (e.g., `media.smartbrainskenya.com`) for a professional experience and better deliverability.
+
+## ⚠️ Known Limitations
+
+- **URL Import:** Reliable for files under ~100MB due to the 60s Vercel serverless function timeout.
+- **File Types:** Only `image/*` and `video/*` MIME types are accepted.
+- **Video Storage:** Designed for direct playback (`<video src="...">`), not for embedding via iframes.

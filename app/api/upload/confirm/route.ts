@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { buildBrandedUrl } from '@/lib/publitio';
-import { MediaType } from '@/types';
+import { MediaType, MediaAsset, SanitizedMediaAsset } from '@/types';
+import { DEFAULT_CATEGORY_SLUG } from '@/lib/categories';
 
 /**
  * POST /api/upload/confirm
@@ -13,6 +14,10 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ data: null, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    if (!db) {
+       return NextResponse.json({ data: null, error: 'Database not initialized' }, { status: 500 });
     }
 
     const json = await req.json();
@@ -44,6 +49,7 @@ export async function POST(req: NextRequest) {
           width_px: publitio_response.width,
           height_px: publitio_response.height,
           duration_secs: publitio_response.duration ? Math.round(publitio_response.duration) : null,
+          category_slug: DEFAULT_CATEGORY_SLUG,
           uploaded_by: session.user.id,
         },
       ])
@@ -61,14 +67,14 @@ export async function POST(req: NextRequest) {
         admin_id: session.user.id,
         action: 'upload',
         media_id: asset.id,
-        metadata: { title: asset.title },
+        metadata: { title: asset.title, category_slug: asset.category_slug || DEFAULT_CATEGORY_SLUG },
       },
     ]);
 
-    const { publitio_id: _, ...sanitizedAsset } = asset as any;
-    return NextResponse.json({ data: sanitizedAsset, error: null });
-  } catch (error: any) {
+    const { publitio_id: _, ...sanitizedAsset } = asset as MediaAsset;
+    return NextResponse.json({ data: sanitizedAsset as SanitizedMediaAsset, error: null });
+  } catch (error) {
     console.error('[API_UPLOAD_CONFIRM_POST] Error:', error);
-    return NextResponse.json({ data: null, error: error.message || 'Failed to confirm upload' }, { status: 500 });
+    return NextResponse.json({ data: null, error: (error as Error).message || 'Failed to confirm upload' }, { status: 500 });
   }
 }

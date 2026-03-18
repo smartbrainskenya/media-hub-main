@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { RotateCcw, AlertTriangle } from 'lucide-react';
+import Link from 'next/link';
+import { RotateCcw, AlertCircle, Home } from 'lucide-react';
 
 export default function Error({
   error,
@@ -11,38 +12,48 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    // Log the error to an error reporting service if needed
     console.error('[GLOBAL_ERROR]', error);
   }, [error]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-brand-bg px-4">
-      <div className="max-w-md w-full bg-white p-8 rounded-2xl border border-brand-border shadow-xl text-center space-y-6">
-        <div className="mx-auto p-4 bg-brand-danger/10 rounded-full w-20 h-20 flex items-center justify-center">
-          <AlertTriangle className="h-10 w-10 text-brand-danger" />
+    <div className="min-h-[80vh] flex items-center justify-center px-4 animate-in fade-in duration-700">
+      <div className="max-w-lg w-full bg-white p-10 rounded-3xl border border-brand-border shadow-2xl text-center space-y-8 relative overflow-hidden">
+        {/* Decorative elements */}
+        <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-brand-danger via-brand-primary to-brand-danger"></div>
+        
+        <div className="mx-auto p-6 bg-brand-danger/5 rounded-full w-24 h-24 flex items-center justify-center">
+          <AlertCircle className="h-12 w-12 text-brand-danger" />
         </div>
         
-        <div className="space-y-2">
-          <h2 className="text-2xl font-bold text-brand-primary">Something went wrong</h2>
-          <p className="text-brand-muted">
-            We encountered an unexpected error. Please try refreshing the page or contact support if the issue persists.
+        <div className="space-y-3">
+          <h2 className="text-3xl font-bold text-brand-primary">Unexpected Error</h2>
+          <p className="text-brand-muted leading-relaxed max-w-sm mx-auto">
+            Something went wrong while loading this page. Our team has been notified.
+            <span className="block mt-2 text-xs opacity-50 font-mono">ID: {error.digest || 'Internal'}</span>
           </p>
         </div>
 
-        <button
-          onClick={reset}
-          className="w-full py-4 bg-brand-primary text-white font-bold rounded-xl shadow-lg shadow-brand-primary/20 hover:bg-opacity-90 transition-all flex items-center justify-center gap-2"
-        >
-          <RotateCcw className="h-5 w-5" />
-          Try Again
-        </button>
+        <div className="grid gap-3 pt-4 sm:grid-cols-2">
+          <button
+            onClick={reset}
+            className="w-full py-4 bg-brand-primary text-white font-bold rounded-2xl shadow-xl shadow-brand-primary/20 hover:scale-[1.02] active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+          >
+            <RotateCcw className="h-5 w-5" />
+            Try Again
+          </button>
+          
+          <Link 
+            href="/"
+            className="w-full py-4 bg-brand-surface text-brand-primary border border-brand-border font-bold rounded-2xl hover:bg-brand-bg transition-all flex items-center justify-center gap-2"
+          >
+            <Home className="h-5 w-5" />
+            Home Page
+          </Link>
+        </div>
 
-        <a 
-          href="/"
-          className="block text-sm font-semibold text-brand-muted hover:text-brand-primary transition-colors"
-        >
-          Return to Homepage
-        </a>
+        <p className="text-xs text-brand-muted">
+          If the problem persists, please contact Smart Brains Kenya support.
+        </p>
       </div>
     </div>
   );

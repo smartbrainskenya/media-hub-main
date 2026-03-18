@@ -45,3 +45,81 @@ export function getVideoThumbnailUrl(brandedUrl: string, publitioId?: string): s
     return '';
   }
 }
+/**
+ * Stable date formatter for hydration: "Nov 3, 2023"
+ */
+export function formatDate(date: string | number | Date): string {
+  const d = new Date(date);
+  return d.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
+}
+
+/**
+ * Calculates smart aspect ratio based on media dimensions
+ * @param width - image/video width in pixels
+ * @param height - image/video height in pixels
+ * @param breakpoint - optional breakpoint ('mobile', 'tablet', 'desktop')
+ * @returns object with aspectRatio (as string) and CSS custom properties
+ */
+export interface AspectRatioResult {
+  /** Tailwind aspect-ratio class or 'aspect-auto' */
+  className: string;
+  /** CSS custom property for aspect-ratio (e.g., "16 / 9") */
+  aspectRatioCss: string;
+  /** Calculated aspect ratio type */
+  type: 'landscape' | 'portrait' | 'square';
+}
+
+export function calculateAspectRatio(
+  width: number | null | undefined,
+  height: number | null | undefined,
+  breakpoint?: 'mobile' | 'tablet' | 'desktop'
+): AspectRatioResult {
+  // Fallback: no dimensions provided
+  if (!width || !height) {
+    return {
+      className: 'aspect-video',
+      aspectRatioCss: '16 / 9',
+      type: 'landscape'
+    };
+  }
+
+  const ratio = width / height;
+
+  // Determine aspect ratio type
+  let type: 'landscape' | 'portrait' | 'square';
+  let className: string;
+  let aspectRatioCss: string;
+
+  if (ratio > 1.2) {
+    // Landscape: 16:9
+    type = 'landscape';
+    className = 'aspect-video';
+    aspectRatioCss = '16 / 9';
+  } else if (ratio < 0.833) {
+    // Portrait: 4:5 (0.8)
+    type = 'portrait';
+    className = 'aspect-[4/5]';
+    aspectRatioCss = '4 / 5';
+  } else {
+    // Square: 1:1
+    type = 'square';
+    className = 'aspect-square';
+    aspectRatioCss = '1 / 1';
+  }
+
+  // Mobile override: force square for gallery cards (optional behavior)
+  if (breakpoint === 'mobile' && type !== 'portrait') {
+    // For mobile, we might want to force square for uniformity in gallery
+    // Keeping this flexible - can be controlled by component
+  }
+
+  return {
+    className,
+    aspectRatioCss,
+    type
+  };
+}

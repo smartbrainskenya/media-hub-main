@@ -10,6 +10,7 @@ import { toast } from 'react-hot-toast';
 import RenameForm from '@/components/admin/RenameForm';
 import DeleteConfirmModal from '@/components/admin/DeleteConfirmModal';
 import { MediaAsset } from '@/types';
+import { formatCategoryLabel, getCategoryBadgeClass } from '@/lib/categories';
 
 interface EditMediaPageProps {
   params: Promise<{
@@ -29,7 +30,7 @@ export default function EditMediaPage({ params }: EditMediaPageProps) {
       try {
         const res = await axios.get(`/api/media/${id}`);
         setAsset(res.data.data);
-      } catch (err) {
+      } catch {
         toast.error('Failed to load asset details');
         router.push('/admin');
       } finally {
@@ -45,9 +46,14 @@ export default function EditMediaPage({ params }: EditMediaPageProps) {
       toast.success('Media deleted successfully');
       router.push('/admin');
       router.refresh();
-    } catch (err: any) {
-      toast.error(err.response?.data?.error || 'Failed to delete media');
-      throw err; // Re-throw for the modal's error state
+    } catch (error) {
+      const errorMessage = axios.isAxiosError(error)
+        ? error.response?.data?.error
+        : error instanceof Error
+          ? error.message
+          : null;
+      toast.error(errorMessage || 'Failed to delete media');
+      throw error; // Re-throw for the modal's error state
     }
   };
 
@@ -91,7 +97,10 @@ export default function EditMediaPage({ params }: EditMediaPageProps) {
                 }`}>
                   {asset.type}
                 </span>
-                <p className="text-[10px] text-brand-muted uppercase font-bold tracking-widest">Type</p>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${getCategoryBadgeClass(asset.category_slug)}`}>
+                  {formatCategoryLabel(asset.category_slug)}
+                </span>
+                <p className="text-[10px] text-brand-muted uppercase font-bold tracking-widest">Tags</p>
               </div>
               <p className="text-xs text-brand-muted truncate font-mono bg-brand-bg p-2 rounded border border-brand-border">
                 {asset.branded_url}

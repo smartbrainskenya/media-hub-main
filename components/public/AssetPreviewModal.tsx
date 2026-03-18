@@ -4,7 +4,7 @@ import Image from 'next/image';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { X } from 'lucide-react';
 import { MediaAsset } from '@/types';
-import { cn } from '@/lib/utils';
+import { cn, calculateAspectRatio } from '@/lib/utils';
 
 interface AssetPreviewModalProps {
   asset: MediaAsset;
@@ -61,6 +61,24 @@ export default function AssetPreviewModal({ asset, onClose }: AssetPreviewModalP
   <source src="${asset.branded_url}" type="video/mp4">
 </video>`;
 
+  // Calculate smart aspect ratio for responsive modal sizing
+  const aspectRatio = calculateAspectRatio(asset.width_px, asset.height_px);
+  
+  // Determine container width and max-height based on aspect ratio type
+  // Portrait: narrower to minimize whitespace; Landscape: wider; Square: balanced
+  const getModalConstraints = () => {
+    switch (aspectRatio.type) {
+      case 'portrait':
+        return { maxWidth: 'max-w-lg', maxHeight: 'max-h-[80vh]' };
+      case 'landscape':
+        return { maxWidth: 'max-w-4xl', maxHeight: 'max-h-[70vh]' };
+      case 'square':
+        return { maxWidth: 'max-w-2xl', maxHeight: 'max-h-[75vh]' };
+    }
+  };
+
+  const { maxWidth, maxHeight } = getModalConstraints();
+
   const buttonConfigs = isVideo
     ? [
         { label: 'Copy Video Link', value: asset.branded_url },
@@ -77,7 +95,7 @@ export default function AssetPreviewModal({ asset, onClose }: AssetPreviewModalP
       <div
         role="dialog"
         aria-modal="true"
-        className="relative w-full max-w-3xl bg-brand-surface border border-brand-border rounded-[28px] shadow-2xl overflow-hidden"
+        className={cn('relative w-full bg-brand-surface border border-brand-border rounded-[28px] shadow-2xl overflow-hidden', maxWidth)}
       >
         <div className="flex items-center justify-between px-6 pt-6">
           <h2 className="text-xl font-semibold text-brand-primary">{asset.title}</h2>
@@ -91,9 +109,9 @@ export default function AssetPreviewModal({ asset, onClose }: AssetPreviewModalP
           </button>
         </div>
         <div className="px-6 pb-6">
-          <div className="mt-4 rounded-2xl border border-brand-border bg-gray-50 overflow-hidden">
+          <div className={cn('mt-4 rounded-2xl border border-brand-border bg-gray-50 overflow-hidden', maxHeight)}>
             {isVideo ? (
-              <div className="relative w-full max-h-[60vh] min-h-[260px] bg-black">
+              <div className="relative w-full bg-black flex-shrink-0" style={{ aspectRatio: aspectRatio.aspectRatioCss } as React.CSSProperties}>
                 <video
                   src={asset.branded_url}
                   controls
@@ -103,8 +121,8 @@ export default function AssetPreviewModal({ asset, onClose }: AssetPreviewModalP
                 />
               </div>
             ) : (
-              <div className="relative w-full max-h-[60vh] min-h-[260px]">
-                <Image src={asset.branded_url} alt={asset.title} fill className="object-contain" />
+              <div className="relative w-full flex-shrink-0" style={{ aspectRatio: aspectRatio.aspectRatioCss } as React.CSSProperties}>
+                <Image src={asset.branded_url} alt={asset.title} fill className="w-full h-full object-contain" />
               </div>
             )}
           </div>

@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { publitio } from '@/lib/publitio';
 import { UpdateMediaSchema } from '@/lib/validations';
 import { MediaAsset } from '@/types';
+import { DEFAULT_CATEGORY_SLUG, normalizeCategorySlug } from '@/lib/categories';
 
 type Params = {
   params: Promise<{
@@ -18,6 +19,11 @@ type Params = {
 export async function GET(req: NextRequest, { params }: Params) {
   try {
     const { id } = await params;
+    
+    if (!db) {
+      return NextResponse.json({ data: null, error: 'Database not initialized' }, { status: 500 });
+    }
+
     const { data: asset, error } = await db
       .from('media_assets')
       .select('*')
@@ -28,9 +34,9 @@ export async function GET(req: NextRequest, { params }: Params) {
       return NextResponse.json({ data: null, error: 'Media not found' }, { status: 404 });
     }
 
-    const { publitio_id: _, ...sanitizedAsset } = asset as any;
+    const { publitio_id: _, ...sanitizedAsset } = asset as MediaAsset;
     return NextResponse.json({ data: sanitizedAsset, error: null });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[API_MEDIA_ID_GET]', error);
     return NextResponse.json({ data: null, error: 'Internal server error' }, { status: 500 });
   }
@@ -38,7 +44,7 @@ export async function GET(req: NextRequest, { params }: Params) {
 
 /**
  * PATCH /api/media/[id]
- * Protected endpoint to update media asset title
+ * Protected endpoint to update media asset metadata
  */
 export async function PATCH(req: NextRequest, { params }: Params) {
   try {
@@ -55,9 +61,35 @@ export async function PATCH(req: NextRequest, { params }: Params) {
       return NextResponse.json({ data: null, error: parsed.error.message }, { status: 400 });
     }
 
+    if (!db) {
+      return NextResponse.json({ data: null, error: 'Database not initialized' }, { status: 500 });
+    }
+
+    const { data: existingAsset, error: existingError } = await db
+      .from('media_assets')
+      .select('title, category_slug')
+      .eq('id', id)
+      .single();
+
+    if (existingError || !existingAsset) {
+      return NextResponse.json({ data: null, error: 'Media not found' }, { status: 404 });
+    }
+
+    const updateData: { title?: string; category_slug?: string } = {};
+    if (parsed.data.title !== undefined) {
+      updateData.title = parsed.data.title.trim();
+    }
+    if (parsed.data.category_slug !== undefined) {
+      updateData.category_slug = normalizeCategorySlug(parsed.data.category_slug);
+    }
+
+    if (Object.keys(updateData).length === 0) {
+      return NextResponse.json({ data: null, error: 'No valid fields to update' }, { status: 400 });
+    }
+
     const { data: asset, error } = await db
       .from('media_assets')
-      .update(parsed.data)
+      .update(updateData)
       .eq('id', id)
       .select()
       .single();
@@ -70,13 +102,18 @@ export async function PATCH(req: NextRequest, { params }: Params) {
         admin_id: session.user.id,
         action: 'rename',
         media_id: asset.id,
-        metadata: { old_title: '...', new_title: asset.title },
+        metadata: {
+          old_title: existingAsset.title,
+          new_title: asset.title,
+          old_category: existingAsset.category_slug || DEFAULT_CATEGORY_SLUG,
+          new_category: asset.category_slug || DEFAULT_CATEGORY_SLUG,
+        },
       },
     ]);
 
-    const { publitio_id: _, ...sanitizedAsset } = asset as any;
+    const { publitio_id: _, ...sanitizedAsset } = asset as MediaAsset;
     return NextResponse.json({ data: sanitizedAsset, error: null });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[API_MEDIA_ID_PATCH]', error);
     return NextResponse.json({ data: null, error: 'Failed to update media' }, { status: 500 });
   }
@@ -95,6 +132,10 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
     const { id } = await params;
 
+    if (!db || !publitio) {
+      return NextResponse.json({ data: null, error: 'System not fully initialized' }, { status: 500 });
+    }
+
     // Get asset info first
     const { data: asset, error: fetchError } = await db
       .from('media_assets')
@@ -108,7 +149,6 @@ export async function DELETE(req: NextRequest, { params }: Params) {
 
     // Delete from Publitio
     try {
-      // @ts-ignore
       await publitio.call(`/files/delete/${asset.publitio_id}`, 'DELETE');
     } catch (publitioError) {
       console.warn('[API_MEDIA_ID_DELETE] Publitio deletion failed:', publitioError);
@@ -133,7 +173,7 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     ]);
 
     return NextResponse.json({ data: null, error: null });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[API_MEDIA_ID_DELETE]', error);
     return NextResponse.json({ data: null, error: 'Failed to delete media' }, { status: 500 });
   }

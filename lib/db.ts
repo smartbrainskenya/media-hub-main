@@ -6,7 +6,7 @@ const supabaseServiceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
 
 export const db = (supabaseUrl && supabaseServiceRoleKey) 
   ? createClient(supabaseUrl, supabaseServiceRoleKey)
-  : null as any;
+  : null;
 
 if (!db && process.env.NODE_ENV !== 'production') {
   console.warn('Supabase client not initialized - missing env variables');

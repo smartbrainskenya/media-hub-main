@@ -4,8 +4,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { ArrowLeft, Maximize, Clock, FileText } from 'lucide-react';
 import URLCopyButton from '@/components/public/URLCopyButton';
-import { formatFileSize, formatDuration } from '@/lib/utils';
+import { formatFileSize, formatDuration, formatDate, calculateAspectRatio } from '@/lib/utils';
 import { MediaAsset } from '@/types';
+import { formatCategoryLabel, getCategoryBadgeClass } from '@/lib/categories';
 
 export const revalidate = 60;
 
@@ -32,9 +33,13 @@ export default async function MediaDetailPage({ params }: MediaDetailPageProps) 
   if (!asset) notFound();
 
   const isVideo = asset.type === 'video';
+  const categoryLabel = formatCategoryLabel(asset.category_slug);
+  
+  // Calculate smart aspect ratio based on dimensions
+  const aspectRatio = calculateAspectRatio(asset.width_px, asset.height_px);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-8">
+    <div className="max-w-5xl mx-auto space-y-8 animate-in fade-in slide-in-from-bottom-2 duration-700">
       <Link
         href={isVideo ? '/videos' : '/images'}
         className="inline-flex items-center gap-2 text-brand-muted hover:text-brand-primary transition-colors font-medium"
@@ -47,12 +52,12 @@ export default async function MediaDetailPage({ params }: MediaDetailPageProps) 
         <div className="lg:col-span-2 space-y-6">
           <div className="bg-white border border-brand-border rounded-2xl overflow-hidden shadow-sm">
             {isVideo ? (
-              <div className="aspect-video bg-black flex items-center justify-center">
+              <div className="w-full bg-black flex items-center justify-center flex-shrink-0" style={{ aspectRatio: aspectRatio.aspectRatioCss } as React.CSSProperties}>
                 <video src={asset.branded_url} controls className="w-full h-full" />
               </div>
             ) : (
-              <div className="relative aspect-video bg-gray-50">
-                <Image src={asset.branded_url} alt={asset.title} fill className="object-contain" priority />
+              <div className="relative w-full bg-gray-50 flex-shrink-0" style={{ aspectRatio: aspectRatio.aspectRatioCss } as React.CSSProperties}>
+                <Image src={asset.branded_url} alt={asset.title} fill className="w-full h-full object-contain" priority />
               </div>
             )}
           </div>
@@ -61,10 +66,13 @@ export default async function MediaDetailPage({ params }: MediaDetailPageProps) 
         <div className="space-y-8">
           <div className="space-y-4">
             <div className="flex items-center gap-2">
+              <span className={`px-2 py-1 text-xs font-bold uppercase tracking-wider rounded ${getCategoryBadgeClass(asset.category_slug)}`}>
+                {categoryLabel}
+              </span>
               <span className={`px-2 py-1 text-xs font-bold uppercase tracking-wider rounded ${isVideo ? "bg-brand-secondary/10 text-brand-secondary" : "bg-brand-primary/10 text-brand-primary"}`}>
                 {asset.type}
               </span>
-              <span className="text-xs text-brand-muted">Added {new Date(asset.created_at).toLocaleDateString()}</span>
+              <span className="text-xs text-brand-muted">Added on {formatDate(asset.created_at)}</span>
             </div>
             <h1 className="text-2xl font-bold text-brand-primary leading-tight">{asset.title}</h1>
           </div>

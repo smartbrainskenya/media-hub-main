@@ -39,14 +39,21 @@ export default function ImportForm() {
       toast.success('Media imported successfully!');
       router.push('/admin');
       router.refresh();
-    } catch (error: any) {
-      console.error('[IMPORT_FORM] Error:', {
-        message: error.message,
-        status: error.response?.status,
-        errorData: error.response?.data,
-      });
+    } catch (error) {
+      let errorMessage = 'Failed to import media';
 
-      const errorMessage = error.response?.data?.error || error.message || 'Failed to import media';
+      if (axios.isAxiosError(error)) {
+        console.error('[IMPORT_FORM] Error:', {
+          message: error.message,
+          status: error.response?.status,
+          errorData: error.response?.data,
+        });
+        errorMessage = error.response?.data?.error || error.message;
+      } else if (error instanceof Error) {
+        console.error('[IMPORT_FORM] Non-Axios Error:', error.message);
+        errorMessage = error.message;
+      }
+
       toast.error(typeof errorMessage === 'string' ? errorMessage : 'An unexpected error occurred');
       setIsImporting(false);
     }

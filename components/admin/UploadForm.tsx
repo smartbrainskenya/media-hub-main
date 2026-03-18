@@ -18,9 +18,9 @@ export default function UploadForm() {
   const router = useRouter();
 
   // Generate title from filename (strip extension)
-  const generateTitle = (filename: string): string => {
+  const generateTitle = useCallback((filename: string): string => {
     return filename.replace(/\.[^/.]+$/, '');
-  };
+  }, []);
 
   // Handle file selection (multiple files)
   const onFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -66,12 +66,12 @@ export default function UploadForm() {
   };
 
   // Calculate total batch size
-  const getTotalSize = (): number => {
+  const getTotalSize = useCallback((): number => {
     return files.reduce((sum, f) => sum + f.file.size, 0);
-  };
+  }, [files]);
 
   // Validate batch before upload
-  const validateBatch = (): boolean => {
+  const validateBatch = useCallback((): boolean => {
     if (files.length === 0) {
       toast.error('Please select at least one file');
       return false;
@@ -87,7 +87,7 @@ export default function UploadForm() {
     }
 
     return true;
-  };
+  }, [files, getTotalSize]);
 
   // Upload files in parallel
   const uploadFilesParallel = useCallback(async () => {
@@ -117,12 +117,6 @@ export default function UploadForm() {
           formData.append('file', fileData.file);
           formData.append('title', fileData.title);
 
-          console.log(`[BULK_UPLOAD] Uploading file ${index + 1}/${files.length}:`, {
-            filename: fileData.file.name,
-            fileSize: (fileData.file.size / (1024 * 1024)).toFixed(2) + ' MB',
-            title: fileData.title,
-          });
-
           const res = await fetch('/api/upload', {
             method: 'POST',
             body: formData,
@@ -149,16 +143,11 @@ export default function UploadForm() {
               i === index ? { ...f, status: 'done' } : f
             )
           );
-
-          console.log(`[BULK_UPLOAD] File ${index + 1} success:`, {
-            assetId: json.data.id,
-            title: json.data.title,
-          });
-        } catch (err: any) {
-          const errorMsg = err.message || 'Upload failed';
+        } catch (err) {
+          const errorMsg = err instanceof Error ? err.message : 'Upload failed';
 
           // Don't add to failed list if cancelled
-          if (err.name !== 'AbortError' && !isCancelled) {
+          if (err instanceof Error && err.name !== 'AbortError' && !isCancelled) {
             failed.push({
               filename: fileData.file.name,
               error: errorMsg,
@@ -171,8 +160,6 @@ export default function UploadForm() {
               i === index ? { ...f, status: 'error', error: errorMsg } : f
             )
           );
-
-          console.error(`[BULK_UPLOAD] File ${index + 1} error:`, errorMsg);
         }
 
         // Update progress after each file completes
@@ -199,15 +186,15 @@ export default function UploadForm() {
       } else {
         toast.error(`✗ All ${files.length} uploads failed`);
       }
-    } catch (err: any) {
+    } catch (err) {
       console.error('[BULK_UPLOAD] Error:', err);
-      if (err.name !== 'AbortError') {
+      if (err instanceof Error && err.name !== 'AbortError') {
         toast.error(err.message || 'Upload process failed');
       }
     } finally {
       setIsUploading(false);
     }
-  }, [files, isCancelled, router]);
+  }, [files, isCancelled, router, validateBatch]);
 
   // Cancel uploads
   const handleCancel = () => {

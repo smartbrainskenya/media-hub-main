@@ -27,7 +27,7 @@ export default function DeleteConfirmModal({
     setIsDeleting(true);
     try {
       await onConfirm();
-    } catch (err) {
+    } catch {
       setIsDeleting(false);
       setIsConfirmed(false);
     }
@@ -44,7 +44,7 @@ export default function DeleteConfirmModal({
         <div className="space-y-2">
           <h3 className="text-xl font-bold text-brand-primary">Permanently Delete?</h3>
           <p className="text-brand-muted">
-            Are you sure you want to delete <strong className="text-brand-primary">"{asset.title}"</strong>? 
+            Are you sure you want to delete <strong className="text-brand-primary">&quot;{asset.title}&quot;</strong>? 
             This action cannot be undone and will remove the file from our servers.
           </p>
         </div>
