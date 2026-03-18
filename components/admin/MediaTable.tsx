@@ -6,6 +6,7 @@ import Link from 'next/link';
 import { ExternalLink, ChevronLeft, ChevronRight, Trash2, LayoutList, LayoutGrid, Save, X } from 'lucide-react';
 import { toast } from 'react-hot-toast';
 import { MediaAsset } from '@/types';
+import { getVideoThumbnailUrl } from '@/lib/utils';
 import DeleteConfirmModal from './DeleteConfirmModal';
 
 interface MediaTableProps {
@@ -27,6 +28,18 @@ export default function MediaTable({ assets: initialAssets, total, page }: Media
 
   const perPage = 20;
   const totalPages = Math.ceil(total / perPage);
+
+  /**
+   * Get display URL for admin preview:
+   * - For videos: use auto-generated JPEG thumbnail
+   * - For images: use the original preview URL
+   */
+  const getDisplayUrl = (asset: MediaAsset): string => {
+    if (asset.type === 'video') {
+      return getVideoThumbnailUrl(asset.branded_url);
+    }
+    return asset.branded_url;
+  };
 
   // Handle inline rename
   const startEdit = (asset: MediaAsset) => {
@@ -163,11 +176,12 @@ export default function MediaTable({ assets: initialAssets, total, page }: Media
                     <td className="px-6 py-4">
                       <div className="relative h-12 w-20 rounded-md overflow-hidden bg-gray-100 border border-brand-border">
                         <Image
-                          src={asset.branded_url}
+                          src={getDisplayUrl(asset)}
                           alt={asset.title}
                           fill
                           className="object-cover"
                           sizes="80px"
+                          unoptimized={asset.type === 'video'}
                         />
                       </div>
                     </td>
@@ -274,10 +288,11 @@ export default function MediaTable({ assets: initialAssets, total, page }: Media
                   {/* Image/Video Preview */}
                   <div className="relative h-32 bg-gray-100 overflow-hidden">
                     <Image
-                      src={asset.branded_url}
+                      src={getDisplayUrl(asset)}
                       alt={asset.title}
                       fill
                       className="object-cover group-hover:scale-105 transition-transform"
+                      unoptimized={asset.type === 'video'}
                     />
                     <div className="absolute top-2 right-2">
                       <span

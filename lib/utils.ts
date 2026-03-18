@@ -27,3 +27,21 @@ export function formatDuration(seconds: number): string {
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
+
+/**
+ * Constructs a pure-client video thumbnail URL from a branded URL and Publitio ID
+ */
+export function getVideoThumbnailUrl(brandedUrl: string, publitioId?: string): string {
+  if (!brandedUrl) return '';
+  try {
+    const url = new URL(brandedUrl);
+    const origin = url.origin.endsWith('/') ? url.origin.slice(0, -1) : url.origin;
+    if (publitioId) {
+      return `${origin}/thumb/${publitioId}.jpg`;
+    }
+    // Fallback: replace the file extension with .jpg since publitio_id is removed in client APIs
+    return brandedUrl.replace(/\.[^/.]+$/, '.jpg');
+  } catch {
+    return '';
+  }
+}

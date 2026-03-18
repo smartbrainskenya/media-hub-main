@@ -1,7 +1,13 @@
+'use client';
+
+import { useState } from 'react';
 import { MediaAsset } from '@/types';
+import AssetPreviewModal from './AssetPreviewModal';
 import MediaCard from './MediaCard';
 
 export default function MediaGrid({ assets, emptyMessage = "No media found.", isLoading = false }: { assets: MediaAsset[], emptyMessage?: string, isLoading?: boolean }) {
+  const [selectedAsset, setSelectedAsset] = useState<MediaAsset | null>(null);
+
   if (isLoading) {
     return (
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
@@ -11,6 +17,7 @@ export default function MediaGrid({ assets, emptyMessage = "No media found.", is
       </div>
     );
   }
+
   if (assets.length === 0) {
     return (
       <div className="text-center py-20 bg-brand-surface border border-brand-border border-dashed rounded-xl">
@@ -18,11 +25,17 @@ export default function MediaGrid({ assets, emptyMessage = "No media found.", is
       </div>
     );
   }
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
-      {assets.map((asset) => (
-        <MediaCard key={asset.id} asset={asset} />
-      ))}
-    </div>
+    <>
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+        {assets.map((asset) => (
+          <MediaCard key={asset.id} asset={asset} onClick={setSelectedAsset} />
+        ))}
+      </div>
+      {!isLoading && selectedAsset && (
+        <AssetPreviewModal asset={selectedAsset} onClose={() => setSelectedAsset(null)} />
+      )}
+    </>
   );
 }

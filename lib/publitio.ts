@@ -36,3 +36,14 @@ export function buildBrandedUrl(publitioPath: string): string {
   const cleanPath = publitioPath.startsWith('/') ? publitioPath : `/${publitioPath}`;
   return `${cleanDomain}${cleanPath}`;
 }
+
+/**
+ * Constructs video thumbnail URL from Publitio ID
+ * For admin dashboard preview display (not for playback)
+ */
+export function buildVideoThumbnailUrl(publitioId: string): string {
+  if (!publitioId) return '';
+  const domain = brandedDomain || 'https://media.smartbrainskenya.com';
+  const cleanDomain = domain.endsWith('/') ? domain.slice(0, -1) : domain;
+  return `${cleanDomain}/thumb/${publitioId}.jpg`;
+}

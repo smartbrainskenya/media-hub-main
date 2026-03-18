@@ -3,7 +3,8 @@
 import { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { ArrowLeft, Trash2, ExternalLink, Image as ImageIcon, Film } from 'lucide-react';
+import { ArrowLeft, Trash2, ExternalLink, Image as ImageIcon } from 'lucide-react';
+import { getVideoThumbnailUrl } from '@/lib/utils';
 import axios from 'axios';
 import { toast } from 'react-hot-toast';
 import RenameForm from '@/components/admin/RenameForm';
@@ -77,15 +78,11 @@ export default function EditMediaPage({ params }: EditMediaPageProps) {
         <div className="md:w-1/3 space-y-6">
           <div className="bg-white border border-brand-border rounded-xl overflow-hidden shadow-sm">
             <div className="aspect-video bg-brand-bg relative flex items-center justify-center">
-              {asset.type === 'video' ? (
-                <Film size={48} className="text-brand-primary/20" />
-              ) : (
-                <img 
-                  src={asset.branded_url} 
-                  alt={asset.title} 
-                  className="w-full h-full object-cover"
-                />
-              )}
+              <img 
+                src={asset.type === 'video' ? getVideoThumbnailUrl(asset.branded_url) : asset.branded_url} 
+                alt={asset.title} 
+                className="w-full h-full object-cover"
+              />
             </div>
             <div className="p-4 border-t border-brand-border space-y-2">
               <div className="flex items-center gap-2">
