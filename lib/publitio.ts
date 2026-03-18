@@ -1,17 +1,24 @@
 import 'server-only';
-// @ts-ignore
+// @ts-expect-error (SDK types are not provided by package)
 import PublitioAPI from 'publitio_js_sdk';
 
-// Handle commonjs export structure of publitio_js_sdk
-const PublitioClient = (PublitioAPI as any).publitioApi || (PublitioAPI as any).default || PublitioAPI;
+export interface PublitioInstance {
+  call: (path: string, method: string, body?: Record<string, unknown>) => Promise<unknown>;
+}
 
 const apiKey = process.env.PUBLITIO_API_KEY;
 const apiSecret = process.env.PUBLITIO_API_SECRET;
 const brandedDomain = process.env.PUBLITIO_BRANDED_DOMAIN;
 
-export const publitio = (apiKey && apiSecret && typeof PublitioClient === 'function')
-  ? new PublitioClient(apiKey, apiSecret)
-  : null as any;
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const PublitioClass = typeof PublitioAPI === 'function' 
+  ? PublitioAPI 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  : (PublitioAPI as any).default || (PublitioAPI as any).publitioApi || PublitioAPI;
+
+export const publitio = (apiKey && apiSecret && PublitioClass)
+  ? new PublitioClass(apiKey, apiSecret) as PublitioInstance
+  : null;
 
 if (!publitio && process.env.NODE_ENV !== 'production') {
   console.warn('Publitio client not initialized - missing env variables');
@@ -35,4 +42,15 @@ export function buildBrandedUrl(publitioPath: string): string {
   const cleanDomain = domain.endsWith('/') ? domain.slice(0, -1) : domain;
   const cleanPath = publitioPath.startsWith('/') ? publitioPath : `/${publitioPath}`;
   return `${cleanDomain}${cleanPath}`;
+}
+
+/**
+ * Constructs video thumbnail URL from Publitio ID
+ * For admin dashboard preview display (not for playback)
+ */
+export function buildVideoThumbnailUrl(publitioId: string): string {
+  if (!publitioId) return '';
+  const domain = brandedDomain || 'https://media.smartbrainskenya.com';
+  const cleanDomain = domain.endsWith('/') ? domain.slice(0, -1) : domain;
+  return `${cleanDomain}/thumb/${publitioId}.jpg`;
 }

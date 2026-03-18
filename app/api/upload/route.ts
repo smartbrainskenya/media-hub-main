@@ -3,7 +3,23 @@ import { createHash } from 'crypto';
 import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { buildBrandedUrl } from '@/lib/publitio';
-import { MediaType } from '@/types';
+import { MediaType, MediaAsset, SanitizedMediaAsset } from '@/types';
+import { DEFAULT_CATEGORY_SLUG } from '@/lib/categories';
+
+interface PublitioResponse {
+  id: string;
+  code: number;
+  message?: string;
+  type: string;
+  extension: string;
+  url_preview?: string;
+  url_short?: string;
+  path?: string;
+  size?: number;
+  width?: number;
+  height?: number;
+  duration?: number;
+}
 
 /**
  * Generate Publitio API auth signature
@@ -83,9 +99,13 @@ export async function POST(req: NextRequest) {
     // Convert File to Buffer
     const buffer = Buffer.from(await file.arrayBuffer());
 
+    if (!db) {
+       return NextResponse.json({ data: null, error: 'Database not initialized' }, { status: 500 });
+    }
+
     // Upload to Publitio with retry logic
-    let publitio_response: any = null;
-    let lastError: any = null;
+    let publitio_response: PublitioResponse | null = null;
+    let lastError: unknown = null;
 
     for (let attempt = 1; attempt <= 3; attempt++) {
       try {
@@ -119,7 +139,7 @@ export async function POST(req: NextRequest) {
         if (!res.ok) {
           const errText = await res.text();
           lastError = new Error(`HTTP ${res.status}: ${errText.substring(0, 200)}`);
-          console.warn(`[API_UPLOAD] Attempt ${attempt} failed:`, lastError.message);
+          console.warn(`[API_UPLOAD] Attempt ${attempt} failed:`, (lastError as Error).message);
           
           if (attempt < 3) {
             await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
@@ -137,7 +157,7 @@ export async function POST(req: NextRequest) {
           break;
         } else {
           lastError = new Error(publitio_response?.message || `API error: ${publitio_response?.code}`);
-          console.warn(`[API_UPLOAD] Attempt ${attempt} failed:`, lastError.message);
+          console.warn(`[API_UPLOAD] Attempt ${attempt} failed:`, (lastError as Error).message);
           
           if (attempt < 3) {
             await new Promise(resolve => setTimeout(resolve, 1000 * attempt));
@@ -155,7 +175,7 @@ export async function POST(req: NextRequest) {
 
     // Check if upload succeeded
     if (!publitio_response || publitio_response.code >= 400 || !publitio_response.id) {
-      const errorMsg = publitio_response?.message || lastError?.message || 'Upload failed after 3 attempts';
+       const errorMsg = publitio_response?.message || (lastError instanceof Error ? lastError.message : String(lastError)) || 'Upload failed after 3 attempts';
       console.error('[API_UPLOAD] Failed to upload:', errorMsg);
       return NextResponse.json(
         { data: null, error: `Upload failed: ${errorMsg}` },
@@ -216,10 +236,9 @@ export async function POST(req: NextRequest) {
       ],
     });
 
-    // Check if we can use direct upsert via SDK (Supabase v2 does NOT support ON CONFLICT in the JS SDK)
     // So we'll use raw SQL execution. If that's not available, fall back to check-then-insert pattern:
     
-    let asset: any;
+    let asset: MediaAsset;
     let wasReplaced = false;
 
     // Try to find existing asset by publitio_id
@@ -276,6 +295,7 @@ export async function POST(req: NextRequest) {
             width_px: publitio_response.width,
             height_px: publitio_response.height,
             duration_secs: publitio_response.duration ? Math.round(publitio_response.duration) : null,
+            category_slug: DEFAULT_CATEGORY_SLUG,
             uploaded_by: session.user.id,
           },
         ])
@@ -299,7 +319,11 @@ export async function POST(req: NextRequest) {
         admin_id: session.user.id,
         action: wasReplaced ? 'replace' : 'upload',
         media_id: asset.id,
-        metadata: { title: asset.title, filename: file.name },
+        metadata: {
+          title: asset.title,
+          filename: file.name,
+          category_slug: asset.category_slug || DEFAULT_CATEGORY_SLUG,
+        },
       },
     ]);
 
@@ -311,12 +335,12 @@ export async function POST(req: NextRequest) {
     });
 
     // Remove publitio_id before sending to client
-    const { publitio_id: _, ...sanitizedAsset } = asset as any;
-    return NextResponse.json({ data: sanitizedAsset, error: null });
-  } catch (error: any) {
+    const { publitio_id: _, ...sanitizedAsset } = asset as MediaAsset;
+    return NextResponse.json({ data: sanitizedAsset as SanitizedMediaAsset, error: null });
+  } catch (error) {
     console.error('[API_UPLOAD_POST] Unexpected error:', error);
     return NextResponse.json(
-      { data: null, error: error.message || 'Unexpected error during upload' },
+      { data: null, error: (error as Error).message || 'Unexpected error during upload' },
       { status: 500 }
     );
   }

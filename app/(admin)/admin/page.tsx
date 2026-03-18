@@ -2,6 +2,7 @@ import { db } from '@/lib/db';
 import MediaTable from '@/components/admin/MediaTable';
 import { MediaAsset } from '@/types';
 import { ImageIcon, Film, LayoutDashboard } from 'lucide-react';
+import { cn } from '@/lib/utils';
 
 export const dynamic = 'force-dynamic';
 
@@ -87,6 +88,3 @@ export default async function AdminDashboard({
     </div>
   );
 }
-
-// Inline helper for CN if needed or import
-import { cn } from '@/lib/utils';

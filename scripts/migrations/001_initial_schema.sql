@@ -15,6 +15,7 @@ CREATE TABLE media_assets (
   publitio_id     TEXT UNIQUE NOT NULL,
   title           TEXT NOT NULL,
   type            TEXT NOT NULL CHECK (type IN ('image', 'video')),
+  category_slug   TEXT NOT NULL DEFAULT 'uncategorized',
   branded_url     TEXT NOT NULL,
   file_hash       TEXT,
   file_size_bytes BIGINT,
@@ -27,7 +28,10 @@ CREATE TABLE media_assets (
 );
 
 CREATE INDEX idx_media_assets_type ON media_assets(type);
+CREATE INDEX idx_media_assets_category_slug ON media_assets(category_slug);
 CREATE INDEX idx_media_assets_created_at ON media_assets(created_at DESC);
+CREATE INDEX idx_media_assets_type_category_created_at
+  ON media_assets(type, category_slug, created_at DESC);
 
 -- 6.3 audit_log
 CREATE TABLE audit_log (

@@ -3,13 +3,31 @@ import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { publitio, buildBrandedUrl } from '@/lib/publitio';
 import { ImportMediaSchema } from '@/lib/validations';
-import { MediaType } from '@/types';
+import { MediaType, MediaAsset, SanitizedMediaAsset } from '@/types';
+import { DEFAULT_CATEGORY_SLUG } from '@/lib/categories';
+
+import { importLimiter } from '@/lib/rate-limit';
 
 /**
  * POST /api/import
  * Protected endpoint to import media from a URL using Publitio SDK
  * Includes retry logic for transient failures
  */
+interface PublitioResponse {
+  id: string;
+  code: number;
+  message?: string;
+  type: string;
+  extension: string;
+  url_preview?: string;
+  url_short?: string;
+  path?: string;
+  size?: number;
+  width?: number;
+  height?: number;
+  duration?: number;
+}
+
 export async function POST(req: NextRequest) {
   const startTime = Date.now();
   
@@ -17,6 +35,23 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ data: null, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Rate limiting
+    if (importLimiter) {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
+      const { success } = await importLimiter.limit(ip);
+      if (!success) {
+        return NextResponse.json({
+          data: null,
+          error: 'Too many requests. Please try again later.'
+        }, { status: 429 });
+      }
+    } else if (process.env.NODE_ENV === 'production') {
+      return NextResponse.json({
+        data: null,
+        error: 'System configuration error: Rate limiting is required in production'
+      }, { status: 503 });
     }
 
     const json = await req.json();
@@ -33,9 +68,22 @@ export async function POST(req: NextRequest) {
 
     const { url, title } = parsed.data;
 
+    // Basic SSRF Protection
+    try {
+      const parsedUrl = new URL(url);
+      const hostname = parsedUrl.hostname.toLowerCase();
+      // Block common local/private IP ranges and hostnames
+      const privateNetRegex = /^(localhost|127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/;
+      if (hostname === 'localhost' || hostname.endsWith('.local') || privateNetRegex.test(hostname)) {
+        return NextResponse.json({ data: null, error: 'Local or private network URLs are not allowed.' }, { status: 400 });
+      }
+    } catch {
+      return NextResponse.json({ data: null, error: 'Invalid URL format.' }, { status: 400 });
+    }
+
     // Import from URL with retry logic
-    let publitio_response: any = null;
-    let lastError: any = null;
+    let publitio_response: PublitioResponse | null = null;
+    let lastError: unknown = null;
 
     console.log('[API_IMPORT] Starting import from URL:', { url, title });
 
@@ -43,11 +91,10 @@ export async function POST(req: NextRequest) {
       try {
         console.log(`[API_IMPORT] Attempt ${attempt}/3 - importing from external URL`);
         
-        // @ts-ignore (SDK types are limited)
-        publitio_response = await publitio.call('/files/create', 'POST', {
+        publitio_response = (await publitio.call('/files/create', 'POST', {
           file_url: url,
           title: title,
-        });
+        })) as PublitioResponse;
 
         if (publitio_response && publitio_response.code < 400 && publitio_response.id) {
           console.log('[API_IMPORT] Import success on attempt', attempt, {
@@ -57,7 +104,7 @@ export async function POST(req: NextRequest) {
           break;
         } else {
           lastError = new Error(publitio_response?.message || `HTTP ${publitio_response?.code}`);
-          console.warn(`[API_IMPORT] Attempt ${attempt} failed:`, lastError.message);
+          console.warn(`[API_IMPORT] Attempt ${attempt} failed:`, (lastError as Error).message);
           
           if (attempt < 3) {
             // Exponential backoff: 1s, 2s
@@ -76,7 +123,7 @@ export async function POST(req: NextRequest) {
 
     // Check if import succeeded
     if (!publitio_response || publitio_response.code >= 400 || !publitio_response.id) {
-      const errorMsg = publitio_response?.message || lastError?.message || 'Import failed after 3 attempts';
+      const errorMsg = publitio_response?.message || (lastError instanceof Error ? lastError.message : String(lastError)) || 'Import failed after 3 attempts';
       console.error('[API_IMPORT] Failed to import:', errorMsg);
       return NextResponse.json(
         { 
@@ -117,6 +164,7 @@ export async function POST(req: NextRequest) {
           width_px: publitio_response.width,
           height_px: publitio_response.height,
           duration_secs: publitio_response.duration ? Math.round(publitio_response.duration) : null,
+          category_slug: DEFAULT_CATEGORY_SLUG,
           uploaded_by: session.user.id,
         },
       ])
@@ -134,7 +182,11 @@ export async function POST(req: NextRequest) {
         admin_id: session.user.id,
         action: 'import',
         media_id: asset.id,
-        metadata: { title: asset.title, source_url: url },
+        metadata: {
+          title: asset.title,
+          source_url: url,
+          category_slug: asset.category_slug || DEFAULT_CATEGORY_SLUG,
+        },
       },
     ]);
 
@@ -145,13 +197,13 @@ export async function POST(req: NextRequest) {
       type: asset.type,
     });
 
-    const { publitio_id: _, ...sanitizedAsset } = asset;
-    return NextResponse.json({ data: sanitizedAsset, error: null });
-  } catch (error: any) {
-    console.error('[API_IMPORT_POST] Unexpected error:', error);
-    if (error.stack) console.error(error.stack);
+    const { publitio_id: _, ...sanitizedAsset } = asset as MediaAsset;
+    return NextResponse.json({ data: sanitizedAsset as SanitizedMediaAsset, error: null });
+  } catch (error) {
+    const err = error as Error;
+    console.error('[API_IMPORT_POST] Unexpected error:', err);
     return NextResponse.json(
-      { data: null, error: error.message || 'Unexpected error during import' },
+      { data: null, error: err.message || 'Unexpected error during import' },
       { status: 500 }
     );
   }

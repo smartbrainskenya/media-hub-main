@@ -15,7 +15,7 @@ export default function URLCopyButton({ url }: { url: string }) {
         setCopied(true);
         setTimeout(() => setCopied(false), 2000);
       } else throw new Error('Clipboard API not available');
-    } catch (err) {
+    } catch {
       setError(true);
       setTimeout(() => setError(false), 3000);
     }

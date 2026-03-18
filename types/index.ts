@@ -5,6 +5,7 @@ export interface MediaAsset {
   publitio_id: string;
   title: string;
   type: MediaType;
+  category_slug: string | null;
   branded_url: string;
   file_size_bytes: number | null;
   width_px: number | null;
@@ -14,6 +15,8 @@ export interface MediaAsset {
   created_at: string;
   updated_at: string;
 }
+
+export type SanitizedMediaAsset = Omit<MediaAsset, 'publitio_id'>;
 
 export interface AdminUser {
   id: string;

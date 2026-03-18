@@ -33,9 +33,12 @@ export default function RenameForm({ asset, onSuccess }: RenameFormProps) {
       const response = await axios.patch(`/api/media/${asset.id}`, data);
       toast.success('Asset renamed successfully!');
       onSuccess(response.data.data);
-    } catch (error: any) {
+    } catch (error) {
       console.error('Rename error:', error);
-      toast.error(error.response?.data?.error || 'Failed to rename asset');
+      const errorMessage = axios.isAxiosError(error) 
+        ? error.response?.data?.error 
+        : error instanceof Error ? error.message : 'Failed to rename asset';
+      toast.error(errorMessage || 'Failed to rename asset');
     } finally {
       setIsSaving(false);
     }

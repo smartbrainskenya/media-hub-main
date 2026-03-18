@@ -3,6 +3,8 @@ import { auth } from '@/lib/auth';
 import { publitio } from '@/lib/publitio';
 import CryptoJS from 'crypto-js';
 
+import { uploadLimiter } from '@/lib/rate-limit';
+
 /**
  * POST /api/upload/sign
  * Protected endpoint to generate Publitio signed upload parameters
@@ -12,6 +14,18 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ data: null, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Rate limiting
+    if (uploadLimiter) {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
+      const { success } = await uploadLimiter.limit(ip);
+      if (!success) {
+        return NextResponse.json({
+          data: null,
+          error: 'Too many requests. Please try again later.'
+        }, { status: 429 });
+      }
     }
 
     const json = await req.json();

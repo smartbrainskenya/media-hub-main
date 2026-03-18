@@ -16,6 +16,11 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 
         console.log('[AUTH] Attempting login for:', credentials.email);
 
+        if (!db) {
+          console.error('[AUTH] DB client not initialized');
+          return null;
+        }
+
         const { data: user, error } = await db
           .from('admin_users')
           .select('*')
