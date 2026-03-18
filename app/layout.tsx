@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Space_Grotesk, DM_Sans } from "next/font/google";
 import { Toaster } from "react-hot-toast";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 
 const spaceGrotesk = Space_Grotesk({
@@ -43,6 +44,7 @@ export default function RootLayout({
             },
           }}
         />
+        <SpeedInsights />
       </body>
     </html>
   );
