@@ -41,38 +41,16 @@ export default function MediaCard({ asset, onClick }: MediaCardProps) {
       </div>
       <div className="p-4 flex flex-col flex-grow">
         <h3 className="font-semibold text-brand-primary line-clamp-2 leading-tight mb-2">{asset.title}</h3>
-        {isVideo ? (
-          <div className="mt-auto flex items-center gap-2">
-            <span
-              className={cn(
-                'px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded',
-                getCategoryBadgeClass(asset.category_slug)
-              )}
-            >
-              {categoryLabel}
-            </span>
-            <span
-              className={cn(
-                'px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider rounded',
-                'bg-brand-secondary/10 text-brand-secondary'
-              )}
-            >
-              {asset.type}
-            </span>
-            <span className="text-xs text-brand-muted">{new Date(asset.created_at).toLocaleDateString()}</span>
-          </div>
-        ) : (
-          <div className="mt-auto">
-            <span
-              className={cn(
-                'inline-flex px-2.5 py-1 rounded text-xs font-extrabold tracking-wide',
-                getCategoryBadgeClass(asset.category_slug)
-              )}
-            >
-              {categoryLabel}
-            </span>
-          </div>
-        )}
+        <div className="mt-auto">
+          <span
+            className={cn(
+              'inline-flex px-2.5 py-1 rounded text-xs font-extrabold tracking-wide',
+              getCategoryBadgeClass(asset.category_slug)
+            )}
+          >
+            {categoryLabel}
+          </span>
+        </div>
       </div>
     </div>
   );
