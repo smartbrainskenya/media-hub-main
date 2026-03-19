@@ -3,7 +3,6 @@ import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { buildBrandedUrl } from '@/lib/publitio';
 import { MediaType, MediaAsset, SanitizedMediaAsset } from '@/types';
-import { DEFAULT_CATEGORY_SLUG } from '@/lib/categories';
 
 /**
  * POST /api/upload/confirm
@@ -49,7 +48,6 @@ export async function POST(req: NextRequest) {
           width_px: publitio_response.width,
           height_px: publitio_response.height,
           duration_secs: publitio_response.duration ? Math.round(publitio_response.duration) : null,
-          category_slug: DEFAULT_CATEGORY_SLUG,
           uploaded_by: session.user.id,
         },
       ])
@@ -67,7 +65,7 @@ export async function POST(req: NextRequest) {
         admin_id: session.user.id,
         action: 'upload',
         media_id: asset.id,
-        metadata: { title: asset.title, category_slug: asset.category_slug || DEFAULT_CATEGORY_SLUG },
+        metadata: { title: asset.title },
       },
     ]);
 
