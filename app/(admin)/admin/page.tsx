@@ -20,13 +20,19 @@ async function getStats() {
   };
 }
 
-async function getMedia(page: number) {
+async function getMedia(page: number, type?: 'image' | 'video') {
   if (!db) return { data: [], total: 0 };
   
   const perPage = 20;
-  const { data, count, error } = await db
+  let query = db
     .from('media_assets')
-    .select('*', { count: 'exact' })
+    .select('*', { count: 'exact' });
+  
+  if (type) {
+    query = query.eq('type', type);
+  }
+  
+  const { data, count, error } = await query
     .order('created_at', { ascending: false })
     .range((page - 1) * perPage, page * perPage - 1);
 
@@ -44,12 +50,13 @@ async function getMedia(page: number) {
 export default async function AdminDashboard({
   searchParams,
 }: {
-  searchParams: Promise<{ page?: string }>;
+  searchParams: Promise<{ page?: string; type?: string }>;
 }) {
   const params = await searchParams;
   const page = Math.max(1, parseInt(params.page || '1'));
+  const type = params.type as 'image' | 'video' | undefined;
   const stats = await getStats();
-  const { data: assets, total } = await getMedia(page);
+  const { data: assets, total } = await getMedia(page, type);
 
   const statCards = [
     { label: 'Total Assets', value: stats.total, icon: LayoutDashboard, color: 'bg-brand-primary' },
@@ -83,7 +90,7 @@ export default async function AdminDashboard({
           <h3 className="font-bold text-brand-primary">Media Library</h3>
           <p className="text-sm text-brand-muted">Total {total} items</p>
         </div>
-        <MediaTable assets={assets} total={total} page={page} />
+        <MediaTable assets={assets} total={total} page={page} type={type} imageTotalCount={stats.images} videoTotalCount={stats.videos} />
       </div>
     </div>
   );
