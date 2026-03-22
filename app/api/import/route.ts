@@ -68,14 +68,26 @@ export async function POST(req: NextRequest) {
 
     const { url, title } = parsed.data;
 
-    // Basic SSRF Protection
+    // Robust SSRF Protection
     try {
       const parsedUrl = new URL(url);
       const hostname = parsedUrl.hostname.toLowerCase();
-      // Block common local/private IP ranges and hostnames
-      const privateNetRegex = /^(localhost|127\.|192\.168\.|10\.|172\.(1[6-9]|2[0-9]|3[0-1])\.)/;
-      if (hostname === 'localhost' || hostname.endsWith('.local') || privateNetRegex.test(hostname)) {
+
+      // 1. Block literal IP addresses and common local hostnames
+      const isLoopback = hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '[::1]';
+      const isLocal = hostname.endsWith('.local') || hostname.endsWith('.internal');
+
+      // 2. Regex for private/reserved IPv4 and IPv6 ranges
+      const privateIpv4Regex = /^(10\.|127\.|172\.(1[6-9]|2[0-9]|3[0-1])\.|192\.168\.|169\.254\.)/;
+      const privateIpv6Regex = /^([fF][cC00]|[fF][eE]80|[0000]:[0000]:[0000]:[0000]:[0000]:[0000]:[0000]:[0001])/;
+
+      if (isLoopback || isLocal || privateIpv4Regex.test(hostname) || privateIpv6Regex.test(hostname)) {
         return NextResponse.json({ data: null, error: 'Local or private network URLs are not allowed.' }, { status: 400 });
+      }
+
+      // 3. Only allow http/https
+      if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        return NextResponse.json({ data: null, error: 'Only HTTP and HTTPS protocols are allowed.' }, { status: 400 });
       }
     } catch {
       return NextResponse.json({ data: null, error: 'Invalid URL format.' }, { status: 400 });
@@ -200,10 +212,9 @@ export async function POST(req: NextRequest) {
     const { publitio_id: _, ...sanitizedAsset } = asset as MediaAsset;
     return NextResponse.json({ data: sanitizedAsset as SanitizedMediaAsset, error: null });
   } catch (error) {
-    const err = error as Error;
-    console.error('[API_IMPORT_POST] Unexpected error:', err);
+    console.error('[API_IMPORT_POST] Unexpected error:', error);
     return NextResponse.json(
-      { data: null, error: err.message || 'Unexpected error during import' },
+      { data: null, error: 'Internal server error' },
       { status: 500 }
     );
   }

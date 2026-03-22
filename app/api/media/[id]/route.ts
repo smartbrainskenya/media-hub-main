@@ -5,6 +5,7 @@ import { publitio } from '@/lib/publitio';
 import { UpdateMediaSchema } from '@/lib/validations';
 import { MediaAsset } from '@/types';
 import { DEFAULT_CATEGORY_SLUG, normalizeCategorySlug } from '@/lib/categories';
+import { publicApiLimiter, mutationLimiter } from '@/lib/rate-limit';
 
 type Params = {
   params: Promise<{
@@ -18,6 +19,15 @@ type Params = {
  */
 export async function GET(req: NextRequest, { params }: Params) {
   try {
+    // Rate limiting
+    if (publicApiLimiter) {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
+      const { success } = await publicApiLimiter.limit(ip);
+      if (!success) {
+        return NextResponse.json({ data: null, error: 'Too many requests. Please try again later.' }, { status: 429 });
+      }
+    }
+
     const { id } = await params;
     
     if (!db) {
@@ -51,6 +61,15 @@ export async function PATCH(req: NextRequest, { params }: Params) {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ data: null, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Rate limiting
+    if (mutationLimiter) {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
+      const { success } = await mutationLimiter.limit(ip);
+      if (!success) {
+        return NextResponse.json({ data: null, error: 'Too many requests. Please try again later.' }, { status: 429 });
+      }
     }
 
     const { id } = await params;
@@ -128,6 +147,15 @@ export async function DELETE(req: NextRequest, { params }: Params) {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ data: null, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Rate limiting
+    if (mutationLimiter) {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
+      const { success } = await mutationLimiter.limit(ip);
+      if (!success) {
+        return NextResponse.json({ data: null, error: 'Too many requests. Please try again later.' }, { status: 429 });
+      }
     }
 
     const { id } = await params;
