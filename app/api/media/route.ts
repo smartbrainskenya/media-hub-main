@@ -4,6 +4,7 @@ import { auth } from '@/lib/auth';
 import { CreateMediaSchema } from '@/lib/validations';
 import { ApiResponse, PaginatedResponse, MediaAsset, SanitizedMediaAsset } from '@/types';
 import { DEFAULT_CATEGORY_SLUG, normalizeCategorySlug } from '@/lib/categories';
+import { publicApiLimiter, mutationLimiter } from '@/lib/rate-limit';
 
 /**
  * GET /api/media
@@ -11,6 +12,15 @@ import { DEFAULT_CATEGORY_SLUG, normalizeCategorySlug } from '@/lib/categories';
  */
 export async function GET(req: NextRequest) {
   try {
+    // Rate limiting
+    if (publicApiLimiter) {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
+      const { success } = await publicApiLimiter.limit(ip);
+      if (!success) {
+        return NextResponse.json({ data: null, error: 'Too many requests. Please try again later.' }, { status: 429 });
+      }
+    }
+
     const { searchParams } = new URL(req.url);
 
     if (!db) {
@@ -67,6 +77,15 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ data: null, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Rate limiting
+    if (mutationLimiter) {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
+      const { success } = await mutationLimiter.limit(ip);
+      if (!success) {
+        return NextResponse.json({ data: null, error: 'Too many requests. Please try again later.' }, { status: 429 });
+      }
     }
 
     if (!db) {

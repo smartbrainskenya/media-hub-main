@@ -16,7 +16,27 @@ const redis = (process.env.UPSTASH_REDIS_REST_URL && process.env.UPSTASH_REDIS_R
  * - Falls back to allowing requests if Redis is not configured (e.g. during dev)
  */
 
-// 5 requests per hour for signed uploads
+// 100 requests per 15 mins for public GET requests
+export const publicApiLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(100, "15 m"),
+      analytics: true,
+      prefix: "media_hub:public",
+    })
+  : null;
+
+// 30 requests per hour for protected mutating actions (POST, PATCH, DELETE)
+export const mutationLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(30, "1 h"),
+      analytics: true,
+      prefix: "media_hub:mutation",
+    })
+  : null;
+
+// 5 requests per hour for uploads
 export const uploadLimiter = redis
   ? new Ratelimit({
       redis,
