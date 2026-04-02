@@ -40,14 +40,17 @@ export default function LoginPage() {
 
       if (result?.error) {
         toast.error('Invalid credentials. Please try again.');
+        setIsLoading(false);
       } else {
         toast.success('Welcome back, Admin!');
-        router.push('/admin');
-        router.refresh();
+        // Allow browser password manager to save credentials by keeping form visible briefly
+        setTimeout(() => {
+          router.push('/admin');
+          router.refresh();
+        }, 500);
       }
     } catch (error) {
       toast.error('A network error occurred. Please try again.');
-    } finally {
       setIsLoading(false);
     }
   };
@@ -83,10 +86,11 @@ export default function LoginPage() {
                 <div className="relative group/field">
                   <input
                     {...register('email')}
+                    name="email"
                     type="email"
                     placeholder="admin@smartbrains.co.ke"
                     className="w-full h-14 pl-4 pr-4 bg-brand-surface border border-brand-border rounded-2xl text-brand-primary placeholder:text-brand-muted/50 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all font-medium"
-                    autoComplete="email"
+                    autoComplete="username email"
                   />
                   {errors.email && (
                     <p className="mt-2 text-xs font-bold text-brand-danger flex items-center gap-1">
@@ -105,6 +109,7 @@ export default function LoginPage() {
                 <div className="relative">
                   <input
                     {...register('password')}
+                    name="password"
                     type="password"
                     placeholder="••••••••"
                     className="w-full h-14 pl-4 pr-4 bg-brand-surface border border-brand-border rounded-2xl text-brand-primary placeholder:text-brand-muted/50 focus:outline-none focus:ring-2 focus:ring-brand-primary/20 focus:border-brand-primary transition-all font-medium"

@@ -15,6 +15,7 @@ export default function UploadForm() {
   const [uploadComplete, setUploadComplete] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const bytesUploadedRef = useRef<Record<number, number>>({}); // Track bytes uploaded per file
   const router = useRouter();
 
   // Generate title from filename (strip extension)
@@ -89,32 +90,68 @@ export default function UploadForm() {
     return true;
   }, [files, getTotalSize]);
 
-  // Upload file using direct method (for files ≤4.5MB)
-  const uploadFileDirectly = useCallback(async (fileData: BulkUploadFile) => {
-    const formData = new FormData();
-    formData.append('file', fileData.file);
-    formData.append('title', fileData.title);
+  // Upload file using direct method (for files ≤4.5MB) with progress tracking
+  const uploadFileDirectly = useCallback(async (fileData: BulkUploadFile, index: number, totalBytes: number) => {
+    return new Promise<void>((resolve, reject) => {
+      const formData = new FormData();
+      formData.append('file', fileData.file);
+      formData.append('title', fileData.title);
 
-    const res = await fetch('/api/upload', {
-      method: 'POST',
-      body: formData,
-      signal: abortControllerRef.current?.signal,
+      const xhr = new XMLHttpRequest();
+
+      // Track upload progress
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          bytesUploadedRef.current[index] = event.loaded;
+
+          // Calculate total progress across all files
+          const totalUploaded = Object.values(bytesUploadedRef.current).reduce((a, b) => a + b, 0);
+          const progress = Math.round((totalUploaded / totalBytes) * 100);
+          setUploadProgress(progress);
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const json = JSON.parse(xhr.responseText);
+            if (!json?.data) {
+              reject(new Error(json?.error || 'No response data'));
+            } else {
+              resolve();
+            }
+          } catch (_err) {
+            reject(new Error('Invalid response format'));
+          }
+        } else {
+          try {
+            const errorData = JSON.parse(xhr.responseText);
+            reject(new Error(errorData.error || `HTTP ${xhr.status}`));
+          } catch {
+            reject(new Error(`HTTP ${xhr.status}`));
+          }
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        reject(new Error('Network error during upload'));
+      });
+
+      xhr.addEventListener('abort', () => {
+        reject(new DOMException('Upload aborted', 'AbortError'));
+      });
+
+      // Handle abort controller
+      const abort = () => xhr.abort();
+      abortControllerRef.current?.signal.addEventListener('abort', abort);
+
+      xhr.open('POST', '/api/upload');
+      xhr.send(formData);
     });
-
-    if (!res.ok) {
-      const errorData = await res.json().catch(() => ({}));
-      const errorMsg = errorData.error || `HTTP ${res.status}`;
-      throw new Error(errorMsg);
-    }
-
-    const json = await res.json();
-    if (!json?.data) {
-      throw new Error(json?.error || 'No response data');
-    }
   }, []);
 
-  // Upload file using signed method (for files >4.5MB)
-  const uploadFileSigned = useCallback(async (fileData: BulkUploadFile) => {
+  // Upload file using signed method (for files >4.5MB) with progress tracking
+  const uploadFileSigned = useCallback(async (fileData: BulkUploadFile, index: number, totalBytes: number) => {
     const file = fileData.file;
     const contentType = file.type || 'application/octet-stream';
 
@@ -143,29 +180,69 @@ export default function UploadForm() {
 
     const { signature, timestamp, nonce, api_key, upload_url } = signJson.data;
 
-    // Step 2: Upload directly to Publitio with signed credentials
-    const publitioFormData = new FormData();
-    publitioFormData.append('api_key', api_key);
-    publitioFormData.append('api_timestamp', timestamp.toString());
-    publitioFormData.append('api_nonce', nonce.toString());
-    publitioFormData.append('api_signature', signature);
-    publitioFormData.append('file', file);
+    // Update progress: 10% for credential fetching
+    bytesUploadedRef.current[index] = Math.round(file.size * 0.1);
+    const totalUploaded1 = Object.values(bytesUploadedRef.current).reduce((a, b) => a + b, 0);
+    setUploadProgress(Math.round((totalUploaded1 / totalBytes) * 100));
 
-    const uploadRes = await fetch(upload_url, {
-      method: 'POST',
-      body: publitioFormData,
-      signal: abortControllerRef.current?.signal,
+    // Step 2: Upload directly to Publitio with signed credentials (with progress tracking)
+    const publitioResponse = await new Promise<Record<string, unknown>>((resolve, reject) => {
+      const publitioFormData = new FormData();
+      publitioFormData.append('api_key', api_key);
+      publitioFormData.append('api_timestamp', timestamp.toString());
+      publitioFormData.append('api_nonce', nonce.toString());
+      publitioFormData.append('api_signature', signature);
+      publitioFormData.append('file', file);
+
+      const xhr = new XMLHttpRequest();
+
+      // Track Publitio upload progress (main upload)
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable) {
+          // 10% already accounted for, map remaining 80% to upload progress
+          bytesUploadedRef.current[index] = Math.round(file.size * (0.1 + (event.loaded / event.total) * 0.8));
+          const totalUploaded = Object.values(bytesUploadedRef.current).reduce((a, b) => a + b, 0);
+          setUploadProgress(Math.round((totalUploaded / totalBytes) * 100));
+        }
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const response = JSON.parse(xhr.responseText);
+            if (!response?.id) {
+              reject(new Error('Invalid response from media server'));
+            } else {
+              resolve(response);
+            }
+          } catch (_err) {
+            reject(new Error('Invalid Publitio response format'));
+          }
+        } else {
+          reject(new Error(`Publitio upload failed: HTTP ${xhr.status}`));
+        }
+      });
+
+      xhr.addEventListener('error', () => {
+        reject(new Error('Network error uploading to media server'));
+      });
+
+      xhr.addEventListener('abort', () => {
+        reject(new DOMException('Upload aborted', 'AbortError'));
+      });
+
+      // Handle abort controller
+      const abort = () => xhr.abort();
+      abortControllerRef.current?.signal.addEventListener('abort', abort);
+
+      xhr.open('POST', upload_url);
+      xhr.send(publitioFormData);
     });
 
-    if (!uploadRes.ok) {
-      const errorMsg = `Publitio upload failed: HTTP ${uploadRes.status}`;
-      throw new Error(errorMsg);
-    }
-
-    const publitioResponse = await uploadRes.json();
-    if (!publitioResponse?.id) {
-      throw new Error('Invalid response from media server');
-    }
+    // Update progress: 95% after Publitio upload completes
+    bytesUploadedRef.current[index] = Math.round(file.size * 0.95);
+    const totalUploaded2 = Object.values(bytesUploadedRef.current).reduce((a, b) => a + b, 0);
+    setUploadProgress(Math.round((totalUploaded2 / totalBytes) * 100));
 
     // Step 3: Confirm upload and create DB record
     const confirmRes = await fetch('/api/upload/confirm', {
@@ -202,6 +279,10 @@ export default function UploadForm() {
     // Create AbortController for cancellation
     abortControllerRef.current = new AbortController();
 
+    // Calculate total bytes for progress calculation
+    const totalBytes = files.reduce((sum, f) => sum + f.file.size, 0);
+    bytesUploadedRef.current = {}; // Reset bytes tracking
+
     // Update all files to 'uploading' status
     setFiles((prev) =>
       prev.map((f) => ({ ...f, status: 'uploading' }))
@@ -217,9 +298,9 @@ export default function UploadForm() {
         try {
           // Route based on file size: use signed method for large files to bypass Vercel limit
           if (fileData.file.size > VERCEL_BODY_LIMIT) {
-            await uploadFileSigned(fileData);
+            await uploadFileSigned(fileData, index, totalBytes);
           } else {
-            await uploadFileDirectly(fileData);
+            await uploadFileDirectly(fileData, index, totalBytes);
           }
 
           successCount++;
@@ -249,11 +330,10 @@ export default function UploadForm() {
           );
         }
 
-        // Update progress after each file completes
-        setUploadProgress((prev) => {
-          const newProgress = Math.round(((successCount + failed.length) / files.length) * 100);
-          return Math.max(prev, newProgress);
-        });
+        // Mark file upload progress as complete (set to full file size)
+        bytesUploadedRef.current[index] = fileData.file.size;
+        const totalUploaded = Object.values(bytesUploadedRef.current).reduce((a, b) => a + b, 0);
+        setUploadProgress(Math.round((totalUploaded / totalBytes) * 100));
       });
 
       await Promise.allSettled(uploadPromises);
