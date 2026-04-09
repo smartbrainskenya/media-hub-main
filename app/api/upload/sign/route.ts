@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { auth } from '@/lib/auth';
-import { publitio } from '@/lib/publitio';
 import CryptoJS from 'crypto-js';
 
 import { uploadLimiter } from '@/lib/rate-limit';
@@ -67,7 +66,7 @@ export async function POST(req: NextRequest) {
       }, 
       error: null 
     });
-  } catch (error: any) {
+  } catch (error) {
     console.error('[API_UPLOAD_SIGN_POST] Error:', error);
     return NextResponse.json({ data: null, error: 'Failed to generate upload signature' }, { status: 500 });
   }

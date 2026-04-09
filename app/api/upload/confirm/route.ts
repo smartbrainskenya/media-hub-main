@@ -3,6 +3,7 @@ import { db } from '@/lib/db';
 import { auth } from '@/lib/auth';
 import { buildBrandedUrl } from '@/lib/publitio';
 import { MediaType, MediaAsset, SanitizedMediaAsset } from '@/types';
+import { mutationLimiter } from '@/lib/rate-limit';
 
 /**
  * POST /api/upload/confirm
@@ -13,6 +14,15 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ data: null, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Rate limiting
+    if (mutationLimiter) {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
+      const { success } = await mutationLimiter.limit(ip);
+      if (!success) {
+        return NextResponse.json({ data: null, error: 'Too many requests. Please try again later.' }, { status: 429 });
+      }
     }
 
     if (!db) {
@@ -73,6 +83,6 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ data: sanitizedAsset as SanitizedMediaAsset, error: null });
   } catch (error) {
     console.error('[API_UPLOAD_CONFIRM_POST] Error:', error);
-    return NextResponse.json({ data: null, error: (error as Error).message || 'Failed to confirm upload' }, { status: 500 });
+    return NextResponse.json({ data: null, error: 'Internal server error' }, { status: 500 });
   }
 }

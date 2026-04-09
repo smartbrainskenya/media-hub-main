@@ -5,6 +5,7 @@ import { auth } from '@/lib/auth';
 import { buildBrandedUrl } from '@/lib/publitio';
 import { MediaType, MediaAsset, SanitizedMediaAsset } from '@/types';
 import { DEFAULT_CATEGORY_SLUG } from '@/lib/categories';
+import { uploadLimiter } from '@/lib/rate-limit';
 
 interface PublitioResponse {
   id: string;
@@ -61,6 +62,15 @@ export async function POST(req: NextRequest) {
     const session = await auth();
     if (!session?.user) {
       return NextResponse.json({ data: null, error: 'Unauthorized' }, { status: 401 });
+    }
+
+    // Rate limiting
+    if (uploadLimiter) {
+      const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
+      const { success } = await uploadLimiter.limit(ip);
+      if (!success) {
+        return NextResponse.json({ data: null, error: 'Too many requests. Please try again later.' }, { status: 429 });
+      }
     }
 
     // Parse multipart form data
@@ -206,37 +216,7 @@ export async function POST(req: NextRequest) {
       uploaded_by: session.user.id,
     });
 
-    // Use raw SQL for upsert (INSERT ... ON CONFLICT)
-    const upsertQuery = `
-      INSERT INTO media_assets (publitio_id, title, type, branded_url, file_size_bytes, width_px, height_px, duration_secs, uploaded_by)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
-      ON CONFLICT (publitio_id) DO UPDATE SET
-        title = EXCLUDED.title,
-        branded_url = EXCLUDED.branded_url,
-        file_size_bytes = EXCLUDED.file_size_bytes,
-        width_px = EXCLUDED.width_px,
-        height_px = EXCLUDED.height_px,
-        duration_secs = EXCLUDED.duration_secs,
-        updated_at = NOW()
-      RETURNING *;
-    `;
-
-    const { data: assetArray, error: dbError } = await db.rpc('execute_upsert', {
-      query: upsertQuery,
-      values: [
-        publitio_response.id,
-        title.trim(),
-        type,
-        branded_url,
-        publitio_response.size || file.size,
-        publitio_response.width,
-        publitio_response.height,
-        publitio_response.duration ? Math.round(publitio_response.duration) : null,
-        session.user.id,
-      ],
-    });
-
-    // So we'll use raw SQL execution. If that's not available, fall back to check-then-insert pattern:
+    // So we'll use check-then-insert pattern:
     
     let asset: MediaAsset;
     let wasReplaced = false;
@@ -340,7 +320,7 @@ export async function POST(req: NextRequest) {
   } catch (error) {
     console.error('[API_UPLOAD_POST] Unexpected error:', error);
     return NextResponse.json(
-      { data: null, error: (error as Error).message || 'Unexpected error during upload' },
+      { data: null, error: 'Internal server error' },
       { status: 500 }
     );
   }
