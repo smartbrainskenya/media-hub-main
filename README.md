@@ -1,117 +1,139 @@
-# Smart Brains Media Hub
+# Smart Brains Kenya – Temporary Static Media Hub
 
-An internal media library platform for **Smart Brains Kenya**, providing students with a curated, branded, and stable source of images and videos for their coding projects.
+![Status: Temporary](https://img.shields.io/badge/Status-Temporary%20%2F%20StopGap-orange)
+![Framework: React](https://img.shields.io/badge/Framework-React%2019-blue)
+![Build Tool: Vite](https://img.shields.io/badge/Build-Vite-purple)
+![Deployment: Vercel](https://img.shields.io/badge/Deployment-Vercel-black)
 
-## 🚀 Project Overview
+## 📖 Table of Contents
+- [Project Overview](#project-overview)
+- [Why This Exists](#why-this-exists)
+- [Core Features](#core-features)
+- [Student Workflow (Mental Model)](#student-workflow-mental-model)
+- [Getting Started](#getting-started)
+- [Deployment](#deployment)
+- [Project Structure](#project-structure)
+- [Technical Constraints](#technical-constraints)
+- [Documentation & Specs](#documentation--specs)
 
-The Smart Brains Media Hub allows admin staff to manage a library of media assets (images and videos) while providing students with a public gallery to browse and copy branded direct URLs for use in their projects.
+---
 
-## 🛠 Tech Stack
+## Project Overview
+The **Temporary Static Media Hub** is a lightweight, **read-only** React application designed to act as a "controlled media shelf" for students. 
 
-| Component | Technology |
-|-----------|------------|
-| **Framework** | Next.js 14+ (App Router) |
-| **Language** | TypeScript 5+ (Strict Mode) |
-| **Styling** | Tailwind CSS v4 |
-| **Database** | Supabase (PostgreSQL) |
-| **Media/CDN** | Publitio (Server-side SDK) |
-| **Auth** | NextAuth v5 (Auth.js) |
-| **Rate Limiting** | Upstash (Redis) |
-| **Deployment** | Vercel |
+It provides a curated collection of **Images** and **Videos** that students can browse, preview, and reuse in their HTML/CSS projects. It is built to function entirely without a backend, database, or user authentication.
 
-## 📋 Prerequisites
+---
 
-- Node.js 20+
-- npm (Node Package Manager)
-- [Supabase](https://supabase.com) account
-- [Publitio](https://publit.io) account
-- [Upstash](https://upstash.com) account
-- [Vercel](https://vercel.com) account (optional, for deployment)
+## Why This Exists
+This project serves as a critical **stop-gap solution** to:
+1.  **Unblock Learning**: Allow lessons to proceed in zero-data or restricted internet environments.
+2.  **Replace External Tools**: Substitute Google Images and YouTube with a safe, local-like alternative.
+3.  **Preserve Habits**: Maintain the exact "Search -> Click -> Copy URL" workflow students have already learned.
 
-## ⚙️ Environment Setup
+> **Note**: This is a throwaway-safe implementation intended to be replaced by a full-stack version later.
 
-Create a `.env.local` file in the root directory and add the following variables:
+---
 
+## Core Features
+| Feature | Description |
+| :--- | :--- |
+| **🖼️ Image Gallery** | Grid of high-quality, curated images organized by category. |
+| **🎥 Video Library** | Native HTML5 video player with standard controls. |
+| **⚡ Instant Search** | Client-side filtering of media assets. |
+| **🖱️ Right-Click Ready** | Native browser context menu support (`Copy Image Address`). |
+| **📱 Responsive Design** | Clean, card-based UI that works on various screen sizes. |
+
+---
+
+## Student Workflow (Mental Model)
+The application strictly adheres to the following interactions to match standard web browsing:
+
+### For Images
+1.  Browse the **Image Gallery**.
+2.  Click an image to preview it large.
+3.  **Right-click** the image.
+4.  Select **"Copy Image Address"**.
+5.  Paste into HTML: `<img src="...">`.
+
+### For Videos
+1.  Browse the **Video Library**.
+2.  Click a video to watch.
+3.  **Right-click** or use the **Copy URL** button.
+4.  Paste into HTML: `<video src="...">`.
+
+---
+
+## Getting Started
+
+### Prerequisites
+- Node.js (Latest LTS)
+- npm
+
+### Installation
 ```bash
-# Supabase
-SUPABASE_URL=your_supabase_project_url
-SUPABASE_SERVICE_ROLE_KEY=your_supabase_service_role_key
+# 1. Clone the repository
+git clone <repository-url>
+cd temp-mediahub
 
-# Publitio
-PUBLITIO_API_KEY=your_publitio_api_key
-PUBLITIO_API_SECRET=your_publitio_api_secret
-PUBLITIO_BRANDED_DOMAIN=https://media.yoursite.com # Branded CNAME in Publitio
-
-# NextAuth
-NEXTAUTH_SECRET=your_random_secret # Generate with: openssl rand -base64 32
-NEXTAUTH_URL=http://localhost:3000
-
-# Rate Limiting (Upstash)
-UPSTASH_REDIS_REST_URL=your_upstash_redis_rest_url
-UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_rest_token
+# 2. Install dependencies
+npm install
 ```
 
-## 🗄️ Database Setup
-
-1. Log in to your Supabase project.
-2. Go to the **SQL Editor**.
-3. Run `scripts/migrations/001_initial_schema.sql`.
-4. Run `scripts/migrations/002_add_category_to_media_assets.sql`.
-5. Run `scripts/migrations/003_add_asset_requests.sql`.
-6. Confirm `media_assets`, `admin_users`, `audit_log`, and `asset_requests` are created and `media_assets.category_slug` exists.
-
-## 👤 Creating the First Admin User
-
-To create an admin user for the first time, use the provided seed script:
-
-1. Ensure `.env.local` is set up.
-2. Run the seed command:
-   ```bash
-   npx tsx scripts/seed-admin.ts
-   ```
-3. Follow the prompts or use the results to log in at `/login`.
-
-## 💻 Local Development
-
+### Development
 ```bash
-# Install dependencies
-npm install
-
-# Start development server
+# Start the local development server
 npm run dev
 ```
 
-The application will be available at [http://localhost:3000](http://localhost:3000).
+### Production Build
+```bash
+# Build for production
+npm run build
 
-## 🚢 Deployment
+# Preview the production build locally
+npm run preview
+```
 
-### Vercel Deployment
+---
 
-1. Push your code to a GitHub repository.
-2. Import the project in Vercel.
-3. Add all environment variables from `.env.local` to the Vercel project settings.
-4. Deploy.
+## Deployment
+This project is optimized for **Vercel**.
 
-*Note: Ensure the Publitio branded domain is correctly configured with your DNS provider.*
+1.  **Configuration**: A `vercel.json` file is included to handle Single Page Application (SPA) routing (rewriting all paths to `/index.html`).
+2.  **Build Command**: `npm run build`
+3.  **Output Directory**: `dist`
 
-## 🛠️ Admin Guide
+---
 
-Admin users can access the dashboard at `/admin`.
+## Project Structure
+```text
+/
+├── ai-spec/              # 🔴 Authoritative Project Specifications
+├── src/
+│   ├── components/       # Reusable UI components (Cards, Modals)
+│   ├── data/             # 💾 STATIC DATA (Hardcoded media lists)
+│   ├── pages/            # Main Route Views (Home, Gallery, Library)
+│   ├── App.jsx           # Main Application Entry
+│   └── main.jsx          # React DOM mounting
+├── public/               # Static assets (Favicons, Logos)
+└── vercel.json           # Deployment config
+```
 
-- **Upload Media:** Use the "Upload" button to upload images or videos. Files are uploaded directly to Publitio using signed URLs.
-- **Import from URL:** Use the "Import" tab to provide a direct URL to an external file. The server will fetch and stream it to Publitio.
-- **Rename:** Edit asset titles directly in the gallery view.
-- **Replace:** Update existing assets with new files while keeping the same ID and URL.
-- **Delete:** Remove assets from both the library and Publitio.
+---
 
-## 🏗️ Architecture Notes
+## Technical Constraints
+*   **No Backend**: Logic must be purely frontend.
+*   **No Database**: Data is stored in `src/data/images.js` and `src/data/videos.js`.
+*   **No Auth**: No login required.
+*   **Hardcoded URLs**: Media links point directly to public content delivery networks (e.g., Publitio).
 
-- **Signed Upload Pattern:** To avoid serverless execution limits, large files are uploaded directly from the browser to Publitio using temporary signed parameters generated by our API.
-- **Publitio over Vercel Blob:** Chosen for its superior built-in media processing (transcoding, resizing) and dedicated global CDN.
-- **Branded URLs:** All client-facing URLs use our own domain (e.g., `media.smartbrainskenya.com`) for a professional experience and better deliverability.
+---
 
-## ⚠️ Known Limitations
+## Documentation & Specs
+For deep-dive details, refer to the `ai-spec/` folder. These documents are the **source of truth**:
 
-- **URL Import:** Reliable for files under ~100MB due to the 60s Vercel serverless function timeout.
-- **File Types:** Only `image/*` and `video/*` MIME types are accepted.
-- **Video Storage:** Designed for direct playback (`<video src="...">`), not for embedding via iframes.
+*   [📄 Canonical Overview](./ai-spec/00_Canonical_Overview_Temp_Mediahub.md)
+*   [📄 User Flows](./ai-spec/01_USER_FLOWS_TEMP.md)
+*   [📄 Data Schema](./ai-spec/02_DATA_SCHEMA_TEMP.md)
+*   [📄 UI Rules](./ai-spec/03_UI_RULES_TEMP.md)
