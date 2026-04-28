@@ -6,6 +6,7 @@ import {
   LayoutDashboard, 
   Upload, 
   Link as LinkIcon, 
+  ClipboardList,
   LogOut,
   ChevronLeft,
   ChevronRight
@@ -23,6 +24,7 @@ export default function AdminSidebar() {
     { href: '/admin', label: 'Dashboard', icon: LayoutDashboard },
     { href: '/admin/upload', label: 'Upload Media', icon: Upload },
     { href: '/admin/import', label: 'Import by URL', icon: LinkIcon },
+    { href: '/admin/requests', label: 'Asset Requests', icon: ClipboardList },
   ];
 
   return (

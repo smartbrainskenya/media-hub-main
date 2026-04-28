@@ -77,3 +77,5 @@ dist-ssr
 # AI Specs
 ai-spec/
 .env
+
+#/previous-appprevios-app/
