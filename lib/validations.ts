@@ -24,3 +24,19 @@ export const ImportMediaSchema = z.object({
   url: z.string().url('Invalid URL'),
   title: z.string().min(1, 'Title is required').max(200),
 });
+
+export const CreateAssetRequestSchema = z.object({
+  query: z.string().trim().min(3, 'Please describe what you need.').max(120, 'Request is too long'),
+  type: z.enum(['image', 'video']),
+  context: z.enum(['project', 'class']),
+  note: z
+    .string()
+    .trim()
+    .max(500, 'Additional notes are too long')
+    .optional()
+    .or(z.literal('')),
+});
+
+export const UpdateAssetRequestStatusSchema = z.object({
+  status: z.enum(['pending', 'fulfilled']),
+});

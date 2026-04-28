@@ -1,4 +1,6 @@
 export type MediaType = 'image' | 'video';
+export type AssetRequestStatus = 'pending' | 'fulfilled';
+export type AssetRequestContext = 'project' | 'class';
 
 export interface MediaAsset {
   id: string;
@@ -44,6 +46,24 @@ export interface PaginatedResponse<T> {
   total: number;
   page: number;
   per_page: number;
+}
+
+export interface AssetRequest {
+  id: string;
+  query: string;
+  type: MediaType;
+  context: AssetRequestContext;
+  note: string | null;
+  status: AssetRequestStatus;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CreateAssetRequestInput {
+  query: string;
+  type: MediaType;
+  context: AssetRequestContext;
+  note?: string;
 }
 
 /**

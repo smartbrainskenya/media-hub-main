@@ -45,3 +45,13 @@ export const authLimiter = redis
       prefix: "media_hub:auth",
     })
   : null;
+
+// 5 public asset requests per hour
+export const assetRequestLimiter = redis
+  ? new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(5, "1 h"),
+      analytics: true,
+      prefix: "media_hub:asset_request",
+    })
+  : null;

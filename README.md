@@ -57,7 +57,8 @@ UPSTASH_REDIS_REST_TOKEN=your_upstash_redis_rest_token
 2. Go to the **SQL Editor**.
 3. Run `scripts/migrations/001_initial_schema.sql`.
 4. Run `scripts/migrations/002_add_category_to_media_assets.sql`.
-5. Confirm `media_assets`, `admin_users`, and `audit_log` are created and `media_assets.category_slug` exists.
+5. Run `scripts/migrations/003_add_asset_requests.sql`.
+6. Confirm `media_assets`, `admin_users`, `audit_log`, and `asset_requests` are created and `media_assets.category_slug` exists.
 
 ## 👤 Creating the First Admin User
 

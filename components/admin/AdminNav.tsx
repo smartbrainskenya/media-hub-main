@@ -9,6 +9,7 @@ export default function AdminNav() {
     if (path === '/admin') return 'Dashboard Overview';
     if (path === '/admin/upload') return 'Upload New Media';
     if (path === '/admin/import') return 'Import from External URL';
+    if (path === '/admin/requests') return 'Asset Request Logs';
     if (path.startsWith('/admin/media/')) return 'Edit Media Asset';
     return 'Admin Control Panel';
   };

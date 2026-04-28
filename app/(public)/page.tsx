@@ -1,71 +1,30 @@
 import Link from 'next/link';
-import { Image as ImageIcon, Film, ArrowRight } from 'lucide-react';
 
 export default function HomePage() {
   return (
-    <div className="flex flex-col items-center justify-center py-12 text-center">
-      <div className="max-w-3xl px-4 space-y-6">
-        <h1 className="text-4xl md:text-5xl font-bold text-brand-primary tracking-tight">
-          Smart Brains <span className="text-brand-secondary">Media Hub</span>
-        </h1>
-        <p className="text-lg md:text-xl text-brand-muted max-w-2xl mx-auto">
-          A curated media library for Smart Brains students. 
-          Easily find and use branded images and videos for your coding projects.
+    <div className="legacy-home-container">
+      <div className="legacy-home-hero">
+        <span className="legacy-home-hero-icon" aria-hidden="true">
+          🎨
+        </span>
+        <h1 className="legacy-home-heading">What would you like to find today?</h1>
+        <p className="legacy-home-copy">
+          Explore our amazing collection of images and videos to use in your awesome coding projects!
         </p>
       </div>
-
-      <div className="grid md:grid-cols-2 gap-8 mt-16 w-full max-w-4xl px-4">
-        <Link 
-          href="/images" 
-          className="group relative overflow-hidden bg-brand-surface border border-brand-border rounded-2xl p-8 transition-all hover:shadow-xl hover:border-brand-primary"
-        >
-          <div className="flex flex-col items-center gap-4">
-            <div className="p-4 bg-brand-primary/10 rounded-full group-hover:scale-110 transition-transform">
-              <ImageIcon className="h-10 w-10 text-brand-primary" />
-            </div>
-            <h2 className="text-2xl font-bold text-brand-primary">Browse Images</h2>
-            <p className="text-brand-muted">
-              Access high-quality icons, illustrations, and photos for your HTML projects.
-            </p>
-            <div className="flex items-center gap-2 font-semibold text-brand-primary mt-4">
-              View Gallery <ArrowRight className="h-4 w-4" />
-            </div>
-          </div>
+      <div className="legacy-card-grid">
+        <Link href="/images" className="legacy-card legacy-nav-card">
+          <div className="legacy-nav-card-icon">🖼️</div>
+          <h2 className="legacy-nav-card-title">Image Gallery</h2>
+          <p className="legacy-nav-card-copy">Find the perfect pictures for your websites.</p>
+          <span className="legacy-nav-card-action">Let&apos;s Go! →</span>
         </Link>
-
-        <Link 
-          href="/videos" 
-          className="group relative overflow-hidden bg-brand-surface border border-brand-border rounded-2xl p-8 transition-all hover:shadow-xl hover:border-brand-secondary"
-        >
-          <div className="flex flex-col items-center gap-4">
-            <div className="p-4 bg-brand-secondary/10 rounded-full group-hover:scale-110 transition-transform">
-              <Film className="h-10 w-10 text-brand-secondary" />
-            </div>
-            <h2 className="text-2xl font-bold text-brand-primary">Browse Videos</h2>
-            <p className="text-brand-muted">
-              Embed stable, branded videos using direct MP4 links in your native video tags.
-            </p>
-            <div className="flex items-center gap-2 font-semibold text-brand-secondary mt-4">
-              View Library <ArrowRight className="h-4 w-4" />
-            </div>
-          </div>
+        <Link href="/videos" className="legacy-card legacy-nav-card">
+          <div className="legacy-nav-card-icon">▶️</div>
+          <h2 className="legacy-nav-card-title">Video Library</h2>
+          <p className="legacy-nav-card-copy">Watch and learn with cool videos.</p>
+          <span className="legacy-nav-card-action">Watch Now! →</span>
         </Link>
-      </div>
-
-      <div className="mt-20 p-8 bg-brand-primary/5 rounded-2xl border border-brand-primary/10 max-w-4xl w-full text-left">
-        <h3 className="text-lg font-bold text-brand-primary mb-4 flex items-center gap-2">
-          How to use:
-        </h3>
-        <ol className="space-y-4 text-brand-muted list-decimal list-inside">
-          <li>Choose an asset from the gallery.</li>
-          <li>Click <strong className="text-brand-primary">Copy URL</strong> on the detail page.</li>
-          <li>Paste the link into your code:
-            <pre className="mt-2 p-3 bg-brand-primary text-white text-xs rounded-lg overflow-x-auto whitespace-pre">
-              {`<img src="COPIED_URL_HERE">
-<video src="COPIED_URL_HERE" controls></video>`}
-            </pre>
-          </li>
-        </ol>
       </div>
     </div>
   );

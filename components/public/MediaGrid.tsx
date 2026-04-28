@@ -1,18 +1,35 @@
 'use client';
 
 import { useState } from 'react';
-import { MediaAsset } from '@/types';
+import { MediaType, SanitizedMediaAsset } from '@/types';
 import AssetPreviewModal from './AssetPreviewModal';
 import MediaCard from './MediaCard';
 
-export default function MediaGrid({ assets, emptyMessage = "No media found.", isLoading = false }: { assets: MediaAsset[], emptyMessage?: string, isLoading?: boolean }) {
-  const [selectedAsset, setSelectedAsset] = useState<MediaAsset | null>(null);
+interface MediaGridProps {
+  type: MediaType;
+  assets: SanitizedMediaAsset[];
+  emptyMessage?: string;
+  emptyActionLabel?: string;
+  onEmptyAction?: () => void;
+  isLoading?: boolean;
+}
+
+export default function MediaGrid({
+  type,
+  assets,
+  emptyMessage = 'No media found.',
+  emptyActionLabel,
+  onEmptyAction,
+  isLoading = false,
+}: MediaGridProps) {
+  const [selectedAsset, setSelectedAsset] = useState<SanitizedMediaAsset | null>(null);
+  const gridClassName = type === 'image' ? 'legacy-image-grid' : 'legacy-video-grid';
 
   if (isLoading) {
     return (
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className={gridClassName}>
         {[...Array(8)].map((_, i) => (
-          <div key={i} className="aspect-video bg-gray-200 animate-pulse rounded-lg"></div>
+          <div key={i} className="legacy-card" style={{ minHeight: 280, opacity: 0.35 }}></div>
         ))}
       </div>
     );
@@ -20,15 +37,22 @@ export default function MediaGrid({ assets, emptyMessage = "No media found.", is
 
   if (assets.length === 0) {
     return (
-      <div className="text-center py-20 bg-brand-surface border border-brand-border border-dashed rounded-xl">
-        <p className="text-brand-muted">{emptyMessage}</p>
+      <div className={gridClassName}>
+        <div className="legacy-no-results">
+          <p>{emptyMessage}</p>
+          {emptyActionLabel && onEmptyAction ? (
+            <button type="button" className="legacy-btn-secondary legacy-request-trigger" onClick={onEmptyAction}>
+              {emptyActionLabel}
+            </button>
+          ) : null}
+        </div>
       </div>
     );
   }
 
   return (
     <>
-      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
+      <div className={gridClassName}>
         {assets.map((asset) => (
           <MediaCard key={asset.id} asset={asset} onClick={setSelectedAsset} />
         ))}
