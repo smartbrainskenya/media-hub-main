@@ -15,16 +15,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ data: null, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Rate limiting
-    if (uploadLimiter) {
-      const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
-      const { success } = await uploadLimiter.limit(ip);
-      if (!success) {
-        return NextResponse.json({
-          data: null,
-          error: 'Too many requests. Please try again later.'
-        }, { status: 429 });
-      }
+    const { success } = await uploadLimiter.limit(session.user.id!);
+    if (!success) {
+      return NextResponse.json({
+        data: null,
+        error: 'Too many requests. Please try again later.'
+      }, { status: 429 });
     }
 
     const json = await req.json();
