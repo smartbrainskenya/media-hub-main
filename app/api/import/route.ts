@@ -37,21 +37,12 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ data: null, error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Rate limiting
-    if (importLimiter) {
-      const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
-      const { success } = await importLimiter.limit(ip);
-      if (!success) {
-        return NextResponse.json({
-          data: null,
-          error: 'Too many requests. Please try again later.'
-        }, { status: 429 });
-      }
-    } else if (process.env.NODE_ENV === 'production') {
+    const { success } = await importLimiter.limit(session.user.id!);
+    if (!success) {
       return NextResponse.json({
         data: null,
-        error: 'System configuration error: Rate limiting is required in production'
-      }, { status: 503 });
+        error: 'Too many requests. Please try again later.'
+      }, { status: 429 });
     }
 
     const json = await req.json();

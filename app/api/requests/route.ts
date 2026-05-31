@@ -6,20 +6,13 @@ import { ApiResponse, AssetRequest } from '@/types';
 
 export async function POST(req: NextRequest) {
   try {
-    if (assetRequestLimiter) {
-      const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
-      const { success } = await assetRequestLimiter.limit(ip);
+    const ip = req.headers.get('x-forwarded-for')?.split(',')[0] || '127.0.0.1';
+    const { success } = await assetRequestLimiter.limit(ip);
 
-      if (!success) {
-        return NextResponse.json(
-          { data: null, error: 'Too many requests. Please try again later.' },
-          { status: 429 }
-        );
-      }
-    } else if (process.env.NODE_ENV === 'production') {
+    if (!success) {
       return NextResponse.json(
-        { data: null, error: 'System configuration error: Rate limiting is required in production' },
-        { status: 503 }
+        { data: null, error: 'Too many requests. Please try again later.' },
+        { status: 429 }
       );
     }
 
