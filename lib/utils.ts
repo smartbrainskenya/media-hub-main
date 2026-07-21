@@ -29,6 +29,21 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
+ * Builds a transformed thumbnail URL via Publitio's on-the-fly `/file/<options>/<name>` transform segment.
+ * Uses c_limit (not c_fill) because c_limit only shrinks — c_fill upscales originals
+ * smaller than the target box, which would make our many already-small images bigger.
+ * c_limit only skips upscaling when both width and height are given together.
+ */
+export function buildThumbnailUrl(brandedUrl: string, width: number, height: number): string {
+  if (!brandedUrl) return brandedUrl;
+  const marker = '/file/';
+  const index = brandedUrl.indexOf(marker);
+  if (index === -1) return brandedUrl;
+  const insertAt = index + marker.length;
+  return `${brandedUrl.slice(0, insertAt)}c_limit,w_${width},h_${height}/${brandedUrl.slice(insertAt)}`;
+}
+
+/**
  * Constructs a pure-client video thumbnail URL from a branded URL and Publitio ID
  */
 export function getVideoThumbnailUrl(brandedUrl: string, publitioId?: string): string {
