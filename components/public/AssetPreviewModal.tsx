@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { SanitizedMediaAsset } from '@/types';
+import { buildThumbnailUrl } from '@/lib/utils';
 import PublicToast from './PublicToast';
 
 interface AssetPreviewModalProps {
@@ -89,7 +90,7 @@ export default function AssetPreviewModal({ asset, onClose }: AssetPreviewModalP
             </video>
           ) : (
             <img
-              src={asset.branded_url}
+              src={buildThumbnailUrl(asset.branded_url, 1280, 720)}
               alt={asset.title}
               className="legacy-modal-image"
               onContextMenu={(event) => {

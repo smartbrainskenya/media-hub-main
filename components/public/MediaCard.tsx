@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { SanitizedMediaAsset } from '@/types';
-import { getVideoThumbnailUrl } from '@/lib/utils';
+import { getVideoThumbnailUrl, buildThumbnailUrl } from '@/lib/utils';
 import { formatCategoryLabel } from '@/lib/categories';
 
 interface MediaCardProps {
@@ -13,7 +13,11 @@ interface MediaCardProps {
 export default function MediaCard({ asset, onClick }: MediaCardProps) {
   const isVideo = asset.type === 'video';
   const categoryLabel = formatCategoryLabel(asset.category_slug);
-  const thumbnailSrc = isVideo ? getVideoThumbnailUrl(asset.branded_url) : asset.branded_url;
+  // 400x220 matches the card's rendered size (.legacy-image-card img: 100% wide in a ~365px
+  // column, fixed 220px height) with modest headroom for higher-density screens.
+  const thumbnailSrc = isVideo
+    ? getVideoThumbnailUrl(asset.branded_url)
+    : buildThumbnailUrl(asset.branded_url, 400, 220);
 
   const cardBody = (
     <div className={isVideo ? 'legacy-video-card' : 'legacy-image-card'}>
